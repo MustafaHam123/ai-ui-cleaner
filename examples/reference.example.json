@@ -1,0 +1,37 @@
+{
+  "id": "codepen-offset-navigation-001",
+  "title": "Offset navigation with an explicit overflow state",
+  "source": {
+    "name": "codepen",
+    "url": "https://example.com/replace-with-authorized-source",
+    "author": "Replace with the original author",
+    "capturedAt": "2026-10-03T20:00:00.000Z"
+  },
+  "kind": "code-component",
+  "summary": "A compact navigation treatment that keeps the current section visible and moves low-priority actions into an explicit overflow control.",
+  "whyItWorks": [
+    "The active location stays visible at narrow widths",
+    "Overflow behavior is explicit instead of silently clipping links"
+  ],
+  "avoidWhen": [
+    "Every destination is a required step in a linear workflow"
+  ],
+  "pageTypes": ["saas-landing-page", "dashboard"],
+  "industries": ["saas"],
+  "moods": ["compact", "technical"],
+  "components": ["navigation", "overflow-menu"],
+  "technologies": ["react", "css"],
+  "tags": ["responsive", "active-state", "keyboard-navigation"],
+  "license": {
+    "spdx": "MIT",
+    "reuseAllowed": true,
+    "notes": "Verify the source license and preserve required attribution."
+  },
+  "code": {
+    "language": "tsx",
+    "content": "export function Example() { return null }",
+    "dependencies": [],
+    "reviewStatus": "unreviewed"
+  },
+  "curatorNotes": "Explain what was manually verified and what still needs review."
+}

@@ -1,0 +1,12 @@
+{
+  "name": "ui-fixer",
+  "version": "0.1.0",
+  "description": "Reference-grounded website design, retrieval, implementation, and review.",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "UI Fixer",
+    "shortDescription": "Reference-grounded website design and review",
+    "defaultPrompt": "Use $building-distinctive-websites to design or improve this website with relevant references."
+  }
+}

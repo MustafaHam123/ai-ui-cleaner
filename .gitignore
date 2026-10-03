@@ -1,0 +1,8 @@
+node_modules/
+dist/*
+!dist/index.cjs
+.env
+*.log
+.DS_Store
+data/local/
+coverage/

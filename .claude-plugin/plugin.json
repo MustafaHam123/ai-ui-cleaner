@@ -1,0 +1,10 @@
+{
+  "name": "ui-fixer",
+  "version": "0.1.0",
+  "description": "Reference-grounded website design, retrieval, implementation, and review.",
+  "author": {
+    "name": "Mustafa Hameed"
+  },
+  "repository": "https://github.com/MustafaHam123/UI-fixer",
+  "license": "MIT"
+}

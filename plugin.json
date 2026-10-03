@@ -1,0 +1,21 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "ui-fixer",
+  "version": "0.1.0",
+  "description": "Build and improve distinctive websites using retrieved, licensed, and source-aware design references.",
+  "author": {
+    "name": "Mustafa Hameed"
+  },
+  "repository": "https://github.com/MustafaHam123/UI-fixer",
+  "license": "MIT",
+  "keywords": ["design", "frontend", "rag", "website", "ui"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "UI Fixer",
+        "shortDescription": "Reference-grounded website design and review",
+        "defaultPrompt": "Use $building-distinctive-websites to design or improve this website with relevant references."
+      }
+    }
+  }
+}
