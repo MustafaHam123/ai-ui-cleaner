@@ -4,8 +4,8 @@ import { parseReferenceRecord, type ReferenceRecord } from "./schema.js";
 import { HybridRetriever, type SearchHit, type SearchOptions } from "./retrieval.js";
 
 function defaultPaths(): string[] {
-  if (process.env.UI_FIXER_DATA_PATHS) {
-    return process.env.UI_FIXER_DATA_PATHS.split(path.delimiter).filter(Boolean).map((entry) => path.resolve(entry));
+  if (process.env.AI_UI_CLEANER_DATA_PATHS) {
+    return process.env.AI_UI_CLEANER_DATA_PATHS.split(path.delimiter).filter(Boolean).map((entry) => path.resolve(entry));
   }
   return [
     path.resolve(process.cwd(), "data/references.jsonl"),

@@ -1,6 +1,0 @@
-interface:
-  display_name: "Building Distinctive Websites"
-  short_description: "Reference-grounded website design and review"
-  default_prompt: "Use $building-distinctive-websites to design or improve this interface with relevant references."
-policy:
-  allow_implicit_invocation: true

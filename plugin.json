@@ -1,20 +1,20 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "ui-fixer",
+  "name": "ai-ui-cleaner",
   "version": "0.1.0",
-  "description": "Build and improve distinctive websites using retrieved, licensed, and source-aware design references.",
+  "description": "Create, review, and repair authored interfaces using retrieved code and visual references.",
   "author": {
     "name": "Mustafa Hameed"
   },
-  "repository": "https://github.com/MustafaHam123/UI-fixer",
+  "repository": "https://github.com/MustafaHam123/ai-ui-cleaner",
   "license": "MIT",
   "keywords": ["design", "frontend", "rag", "website", "ui"],
   "extensions": {
     "com.openai": {
       "interface": {
-        "displayName": "UI Fixer",
-        "shortDescription": "Reference-grounded website design and review",
-        "defaultPrompt": "Use $building-distinctive-websites to design or improve this website with relevant references."
+        "displayName": "AI UI Cleaner",
+        "shortDescription": "Create and repair authored product interfaces",
+        "defaultPrompt": "Use $ai-ui-cleaner to create, redesign, or review this interface with its design DNA and retrieved references."
       }
     }
   }

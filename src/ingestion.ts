@@ -42,6 +42,18 @@ export function normalizeImportedRecord(value: unknown, preserveReviewStatus = f
     if (!new Set(["http:", "https:"]).has(url.protocol)) throw new Error(`Unsupported source URL protocol: ${url.protocol}`);
   }
 
+  if (Array.isArray(raw.assets)) {
+    for (const asset of raw.assets) {
+      if (!asset || typeof asset !== "object" || Array.isArray(asset)) continue;
+      const assetUrl = (asset as Record<string, unknown>).url;
+      if (typeof assetUrl !== "string") continue;
+      const url = new URL(assetUrl);
+      if (!new Set(["http:", "https:"]).has(url.protocol)) {
+        throw new Error(`Unsupported asset URL protocol: ${url.protocol}`);
+      }
+    }
+  }
+
   const code = raw.code && typeof raw.code === "object" && !Array.isArray(raw.code)
     ? {
         ...(raw.code as Record<string, unknown>),

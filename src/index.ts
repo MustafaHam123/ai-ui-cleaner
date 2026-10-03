@@ -1,14 +1,14 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
-import { createUiFixerServer } from "./server.js";
+import { createAiUiCleanerServer } from "./server.js";
 import { ReferenceStore } from "./store.js";
 
 async function runStdio(store: ReferenceStore): Promise<void> {
-  const server = createUiFixerServer(store);
+  const server = createAiUiCleanerServer(store);
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error(`ui_fixer MCP ready over stdio with ${(await store.all()).length} references`);
+  console.error(`ai_ui_cleaner MCP ready over stdio with ${(await store.all()).length} references`);
 }
 
 async function runHttp(store: ReferenceStore): Promise<void> {
@@ -22,7 +22,7 @@ async function runHttp(store: ReferenceStore): Promise<void> {
   });
 
   app.post("/mcp", async (request, response) => {
-    const server = createUiFixerServer(store);
+    const server = createAiUiCleanerServer(store);
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     response.on("close", () => {
       void transport.close();
@@ -54,7 +54,7 @@ async function runHttp(store: ReferenceStore): Promise<void> {
   app.delete("/mcp", rejectUnsupported);
 
   app.listen(port, host, () => {
-    console.error(`ui_fixer MCP listening at http://${host}:${port}/mcp`);
+    console.error(`ai_ui_cleaner MCP listening at http://${host}:${port}/mcp`);
   });
 }
 
@@ -70,6 +70,6 @@ async function main(): Promise<void> {
 }
 
 void main().catch((error) => {
-  console.error("ui_fixer failed to start", error);
+  console.error("ai_ui_cleaner failed to start", error);
   process.exit(1);
 });

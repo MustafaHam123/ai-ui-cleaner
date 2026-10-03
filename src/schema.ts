@@ -16,6 +16,17 @@ export const codeAssetSchema = z.object({
   reviewStatus: z.enum(["unreviewed", "reviewed", "blocked"]).default("unreviewed"),
 });
 
+export const referenceAssetSchema = z.object({
+  id: z.string().regex(/^[a-z0-9][a-z0-9._-]{2,127}$/),
+  kind: z.enum(["screenshot", "figma-frame", "image", "code-preview"]),
+  url: z.string().url(),
+  mediaType: z.enum(["image/png", "image/jpeg", "image/webp", "image/gif"]),
+  alt: z.string().min(1).max(500),
+  width: z.number().int().positive().max(20_000).optional(),
+  height: z.number().int().positive().max(20_000).optional(),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+});
+
 export const referenceRecordSchema = z.object({
   id: z.string().regex(/^[a-z0-9][a-z0-9._-]{2,127}$/),
   title: z.string().min(2).max(200),
@@ -40,6 +51,7 @@ export const referenceRecordSchema = z.object({
     reuseAllowed: z.boolean().default(false),
     notes: z.string().max(1_000).optional(),
   }),
+  assets: z.array(referenceAssetSchema).max(20).default([]),
   code: codeAssetSchema.optional(),
   curatorNotes: z.string().max(4_000).optional(),
 });

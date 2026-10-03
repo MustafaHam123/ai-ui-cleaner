@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "ui_fixer": {
+    "ai_ui_cleaner": {
       "type": "stdio",
       "command": "node",
       "args": ["${CLAUDE_PLUGIN_ROOT}/dist/index.cjs"],

@@ -1,9 +1,9 @@
 {
-  "name": "ui-fixer",
+  "name": "ai-ui-cleaner",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Reference-grounded website design retrieval MCP server and agent skill.",
+  "description": "Reference-grounded interface creation, review, and repair MCP server and agent skill.",
   "license": "MIT",
   "engines": {
     "node": ">=20"

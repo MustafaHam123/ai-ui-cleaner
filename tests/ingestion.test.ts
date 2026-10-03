@@ -35,3 +35,33 @@ test("ingestion rejects non-http source URLs", () => {
     /Unsupported source URL protocol/,
   );
 });
+
+test("ingestion accepts curated screenshot metadata and rejects local asset URLs", () => {
+  const record = normalizeImportedRecord({
+    ...base,
+    assets: [{
+      id: "external-example-001-desktop",
+      kind: "screenshot",
+      url: "https://assets.example.com/example.png",
+      mediaType: "image/png",
+      alt: "Desktop example",
+      width: 1440,
+      height: 900,
+    }],
+  });
+  assert.equal(record.assets[0]?.kind, "screenshot");
+
+  assert.throws(
+    () => normalizeImportedRecord({
+      ...base,
+      assets: [{
+        id: "external-example-001-local",
+        kind: "screenshot",
+        url: "file:///tmp/example.png",
+        mediaType: "image/png",
+        alt: "Local file",
+      }],
+    }),
+    /Unsupported asset URL protocol/,
+  );
+});
