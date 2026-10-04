@@ -7,7 +7,7 @@ AI UI Cleaner is a reference-grounded interface creation, review, and repair plu
 - A local-first hybrid RAG layer with keyword relevance, hashed-vector similarity, metadata boosts, filtering, and diversity reranking.
 - Conservative provenance and code-reuse gates.
 
-The repository starts with original abstract design patterns. It does not contain copied third-party code, screenshots, or scraped catalog content. Production corpus data belongs outside Git.
+The committed seed records are original abstract design patterns. Harvested reference data, code, source snapshots, and preview images belong outside Git. The Cloudflare backend and bounded collector are implemented; see [the cloud corpus setup](docs/cloudflare.md) for deployment, existing collection coverage, and imports.
 
 ## Quick start
 
@@ -64,7 +64,7 @@ Do not commit credentials to either MCP configuration.
 | `get_code_asset` | Returns code only when reuse is licensed and curator review is complete. |
 | `reference_stats` | Shows corpus coverage and reusable-code counts. |
 
-All tools are read-only. New records are added through the offline ingestion command rather than a model-facing write tool.
+All model-facing tools are read-only. New records are added through local ingestion or the separate authenticated cloud admin API.
 
 ## Add reference data
 
@@ -86,6 +86,7 @@ The following fields are important for retrieval quality:
 
 - `pageTypes`, `industries`, `moods`, and `components`
 - `summary`, `whyItWorks`, and `avoidWhen`
+- `implementation`: general approach, pattern-specific steps, responsive/accessibility notes, and adaptation instructions
 - `source.name`, `source.url`, author, capture date, and license
 - Technology and framework requirements for reusable code
 
@@ -100,8 +101,8 @@ Use this production split:
 | Layer | Store | Contents |
 |---|---|---|
 | Repository | GitHub | MCP code, skill, schemas, migrations, tiny seeds, tests |
-| Metadata and retrieval | PostgreSQL with vector support or a managed vector/search database | Reference metadata, normalized text, tags, license state, embeddings, searchable code chunks |
-| Binary assets | S3-compatible object storage such as S3, R2, or Supabase Storage | Screenshots, Figma exports, permitted HTML snapshots, large code archives |
+| Metadata and retrieval | Cloudflare D1 + Vectorize (implemented) | Reference metadata, normalized text, tags, license state, embeddings, searchable reviewed-code chunks |
+| Binary assets | Cloudflare R2 (implemented) | Preview images, Figma exports, permitted snapshots, license notices |
 | Ingestion workers | Job runner or queue | Authorized fetching, screenshot capture, normalization, deduplication, embeddings, license review |
 | MCP runtime | Container or serverless service | Search, record retrieval, signed asset access, and code-license enforcement |
 
@@ -125,7 +126,7 @@ Object-storage URLs should use a controlled hostname listed in `AI_UI_CLEANER_AS
 
 The built-in retriever requires no embedding API key. It combines BM25-style term scoring with a deterministic hashed token/trigram vector, then applies explicit metadata boosts and source/type diversity penalties. This is suitable for local development and predictable testing.
 
-For a larger production corpus, keep the MCP tool contract and replace `HybridRetriever` with a hosted vector/keyword index and reranker. The skill and MCP clients do not need to change.
+The Cloudflare backend uses D1 FTS5 plus Workers AI embeddings and Vectorize, with rank fusion and source/type diversity. Set `AI_UI_CLEANER_CLOUD_URL` and `MCP_READ_TOKEN` to make the stdio server forward to the hosted corpus. Local emulation runs FTS5 without the semantic service. See [deployment and testing](docs/cloudflare.md).
 
 ## Environment
 

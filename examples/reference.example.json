@@ -9,6 +9,14 @@
   },
   "kind": "code-component",
   "summary": "A compact navigation treatment that keeps the current section visible and moves low-priority actions into an explicit overflow control.",
+  "usage": "reference-only",
+  "implementation": {
+    "approach": "Represent real destinations with semantic links. Keep the active destination visible while secondary links move into an explicit overflow control.",
+    "steps": ["Prioritize destinations by the user's workflow rather than equal visual weight.", "Measure available width and move secondary links into a keyboard-accessible menu.", "Preserve active state and focus as the navigation reflows."],
+    "responsive": ["Use actual label widths; never hide a required destination without an alternative access path."],
+    "accessibility": ["Expose the current location, menu expanded state, keyboard operation, and visible focus."],
+    "adaptation": ["Use the navigation behavior with the project's own labels, tokens, and content. Do not copy the source's full composition or ornamental style."]
+  },
   "whyItWorks": [
     "The active location stays visible at narrow widths",
     "Overflow behavior is explicit instead of silently clipping links"

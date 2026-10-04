@@ -14,17 +14,27 @@ export const codeAssetSchema = z.object({
   content: z.string().min(1).max(200_000),
   dependencies: z.array(z.string().max(120)).max(50).default([]),
   reviewStatus: z.enum(["unreviewed", "reviewed", "blocked"]).default("unreviewed"),
+  licenseText: z.string().max(12_000).optional(),
 });
 
 export const referenceAssetSchema = z.object({
   id: z.string().regex(/^[a-z0-9][a-z0-9._-]{2,127}$/),
   kind: z.enum(["screenshot", "figma-frame", "image", "code-preview"]),
-  url: z.string().url(),
+  url: z.string().url().optional(),
+  storageKey: z.string().min(1).max(500).optional(),
   mediaType: z.enum(["image/png", "image/jpeg", "image/webp", "image/gif"]),
   alt: z.string().min(1).max(500),
   width: z.number().int().positive().max(20_000).optional(),
   height: z.number().int().positive().max(20_000).optional(),
   sha256: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+}).refine((asset) => Boolean(asset.url || asset.storageKey), "Asset requires a URL or storageKey");
+
+export const implementationSchema = z.object({
+  approach: z.string().min(10).max(1500),
+  steps: z.array(z.string().min(3).max(700)).max(12).default([]),
+  responsive: z.array(z.string().min(3).max(500)).max(8).default([]),
+  accessibility: z.array(z.string().min(3).max(500)).max(8).default([]),
+  adaptation: z.array(z.string().min(3).max(700)).min(1).max(8),
 });
 
 export const referenceRecordSchema = z.object({
@@ -38,6 +48,8 @@ export const referenceRecordSchema = z.object({
   }),
   kind: referenceKindSchema,
   summary: z.string().min(10).max(4_000),
+  implementation: implementationSchema.optional(),
+  usage: z.literal("reference-only").default("reference-only"),
   whyItWorks: z.array(z.string().min(3).max(500)).min(1).max(20),
   avoidWhen: z.array(z.string().min(3).max(500)).max(20).default([]),
   pageTypes: z.array(z.string().min(1).max(80)).max(30).default([]),

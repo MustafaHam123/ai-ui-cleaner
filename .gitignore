@@ -2,6 +2,11 @@ node_modules/
 dist/*
 !dist/index.cjs
 .env
+.env.*
+!.env.example
+.dev.vars
+.wrangler/
+wrangler.generated.json
 *.log
 .DS_Store
 data/local/

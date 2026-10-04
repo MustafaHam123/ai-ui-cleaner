@@ -25,7 +25,7 @@ function cleanList(values: unknown): unknown {
 }
 
 function assertSafeNarrative(record: ReferenceRecord): void {
-  const narrative = [record.title, record.summary, ...record.whyItWorks, ...record.avoidWhen, record.curatorNotes ?? ""].join("\n");
+  const narrative = [record.title, record.summary, ...record.whyItWorks, ...record.avoidWhen, record.curatorNotes ?? "", record.implementation ? JSON.stringify(record.implementation) : ""].join("\n");
   const match = SUSPICIOUS.find((pattern) => pattern.test(narrative));
   if (match) throw new Error(`Record ${record.id} contains suspicious instruction-like content matching ${match}`);
 }
@@ -63,10 +63,15 @@ export function normalizeImportedRecord(value: unknown, preserveReviewStatus = f
       }
     : raw.code;
 
+  const implementation = raw.implementation && typeof raw.implementation === "object" && !Array.isArray(raw.implementation)
+    ? Object.fromEntries(Object.entries(raw.implementation).map(([key, entry]) => [key, typeof entry === "string" ? cleanText(entry) : cleanList(entry)]))
+    : raw.implementation;
+
   const cleaned = {
     ...raw,
     title: typeof raw.title === "string" ? cleanText(raw.title) : raw.title,
     summary: typeof raw.summary === "string" ? cleanText(raw.summary) : raw.summary,
+    implementation,
     whyItWorks: cleanList(raw.whyItWorks),
     avoidWhen: cleanList(raw.avoidWhen),
     pageTypes: cleanList(raw.pageTypes),

@@ -2,6 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { parseReferenceRecord, type ReferenceRecord } from "./schema.js";
 import { HybridRetriever, type SearchHit, type SearchOptions } from "./retrieval.js";
+import { summarizeRecords } from "./repository.js";
 
 function defaultPaths(): string[] {
   if (process.env.AI_UI_CLEANER_DATA_PATHS) {
@@ -81,6 +82,10 @@ export class ReferenceStore {
   async all(): Promise<ReferenceRecord[]> {
     await this.refresh();
     return [...this.records];
+  }
+
+  async stats() {
+    return { ...summarizeRecords(await this.all(), "local-jsonl"), dataPaths: this.paths };
   }
 
   get dataPaths(): readonly string[] {

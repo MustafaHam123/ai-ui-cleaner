@@ -47,11 +47,12 @@ For every substantial create or redesign task—and for reviews where comparison
    - page composition and information hierarchy;
    - the critical interaction or state model;
    - specialized components or implementation techniques.
-4. Select three to six complementary records. Prefer source and pattern diversity over several near-duplicates.
-5. Call `get_reference` for the strongest candidates.
-6. Call `get_reference_asset` when a selected record has screenshots or visual assets. Inspect the actual image before making visual claims.
-7. Call `get_code_asset` only after selecting a relevant record and only when the server confirms licensed, curator-reviewed reuse.
-8. Synthesize what to **preserve**, **adapt**, **push**, and **avoid**. Never copy one source wholesale.
+4. Run one deliberate **counter-reference search** for the same content problem solved with a different hierarchy or layout grammar. Similarity-only retrieval causes aesthetic convergence.
+5. Select three to six complementary records. Prefer source and pattern diversity over several near-duplicates. Reject a set in which most references use the same hero, type scale, section rhythm, or card topology.
+6. Call `get_reference` for the strongest candidates.
+7. Call `get_reference_asset` when a selected record has screenshots or visual assets. Inspect the actual image before making visual claims.
+8. Call `get_code_asset` only after selecting a relevant record and only when the server confirms licensed, curator-reviewed reuse.
+9. Synthesize what to **preserve**, **adapt**, **push**, and **avoid**. Include at least one pattern to avoid because it is overrepresented in the retrieved set. Never copy one source wholesale or average several sources into a fashionable template. Retrieved references do not authorize any pattern disabled by this skill.
 
 Use code-focused sources for implementation techniques only. Use Dribbble and galleries as visual hypotheses, not proof of usability. Use Figma sources for tokens, variants, responsive intent, and component relationships. Use shipped internal work and observed user outcomes as the strongest evidence.
 
@@ -97,7 +98,7 @@ Identify grid logic, content width, section proportions, containment, symmetry o
 
 ### Typography DNA
 
-Identify display and body relationships, hierarchy, scale ratios, line height, tracking, capitalization, label and metadata behavior, alignment, and any editorial use of type as architecture.
+Identify display and body relationships, hierarchy, scale ratios, line height, tracking, capitalization, label and metadata behavior, alignment, and any deliberate use of type in the supplied product.
 
 ### Visual DNA
 
@@ -117,7 +118,7 @@ Extract five to ten specific signature behaviors. Do not add a behavior unsuppor
 
 Ask:
 
-- Is the system editorial or systematic, restrained or expressive?
+- Is the system narrative or systematic, restrained or expressive?
 - Does hierarchy come primarily from scale, spacing, density, imagery, color, or position?
 - Where does the grid break intentionally?
 - What feels controlled and what feels unexpected?
@@ -129,7 +130,7 @@ Do not remove productive tension merely to make the interface conventional.
 
 Before creating or materially redesigning, express the direction in one sentence. If the direction cannot be explained in one sentence, it is probably styling rather than design.
 
-The thesis must state what organizes the composition, such as typography acting as architecture, alternating density creating narrative, or interface evidence leading every claim. Generate the thesis from the actual content and design DNA—not from a preset aesthetic.
+The thesis must connect a product-specific idea to an organizing behavior. Describe what the user should understand or do and how the composition reveals it. `Engineering decisions become understandable through annotated cutaways` is a thesis; `typography acts as architecture` is only a styling recipe. Generate the thesis from actual content and design DNA, not a preset aesthetic.
 
 ## Content rules
 
@@ -138,6 +139,12 @@ Use supplied content and verified product behavior as the source of truth. Do no
 If content is missing, create only lightweight, obviously replaceable copy needed to evaluate hierarchy. Avoid fake specificity and generic marketing language.
 
 The design should expose weak or missing content rather than hiding it behind decoration.
+
+Customer-facing copy must discuss the product, action, evidence, or user outcome—not the designer's intention. Unless the page is explicitly a design case study or concept presentation, do not publish self-referential lines such as `Less noise. More intent.`, `A machine with a point of view.`, `Built as one composition`, `A visual study`, or explanations of why the interface uses a particular layout. Put design rationale in annotations or the completion report instead.
+
+Treat vague atmosphere words as warning signals when they carry no product fact: `intent`, `precision`, `focus`, `crafted`, `elevated`, `seamless`, `purpose`, `experience`, `journey`, `bold`, and `timeless`. They are not forbidden vocabulary, but each use must communicate something verifiable in context. Prefer concrete nouns, verbs, capabilities, constraints, and outcomes.
+
+Do not manufacture taxonomies merely to populate a layout. Labels such as `Interface`, `Density`, `Motion`, `Theme`, `Character`, or `Focus` are not content unless the user actually needs those concepts. If a section disappears when its decorative labels are removed, the section probably has no job.
 
 ## Layout exploration
 
@@ -151,7 +158,17 @@ When multiple concepts are requested, make them structurally different:
 
 Variations must differ through hierarchy, scale, pacing, section structure, image placement, grid behavior, whitespace, density, typography, or sequence. Color swaps, radius changes, card restyling, and minor alignment shifts are not separate concepts.
 
-Possible structural strategies include asymmetric splits, editorial columns, nested grids, staggered content, controlled overlap, full-width moments, narrow reading columns, alternating density, offset imagery, horizontal sequences, deliberate empty space, scale shifts, and grid interruptions. Use them only when the thesis and source DNA support them.
+Possible structural strategies include asymmetric splits, content-led columns, nested grids, staggered content, controlled overlap, full-width moments, narrow reading columns, alternating density, offset imagery, horizontal sequences, deliberate empty space, scale shifts, and grid interruptions. Use them only when the thesis and source DNA support them.
+
+Before implementation, make an internal **section grammar map**. For each major section record:
+
+- its user-facing job: orient, explain, demonstrate, compare, prove, transact, or conclude;
+- its dominant medium: prose, product UI, photography, illustration, data, code, or interaction;
+- its hierarchy sequence, for example `headline → evidence → action`;
+- its topology: split, single column, rail, table, gallery, stage, timeline, or another content-derived structure;
+- its dominant scale, alignment, density, and visual device.
+
+Adjacent sections should not have identical rows. Change at least two meaningful axes when the content changes—such as medium and topology, or hierarchy and density—while retaining shared tokens and brand logic. Variation is not random novelty: each change must follow the section's job.
 
 ## Anti-slop constraints
 
@@ -168,6 +185,32 @@ Do not automatically generate:
 - excessive shadows or decorative geometry without function;
 - identical section spacing or the same grid in every section;
 - the predictable sequence `Hero → Logo bar → Three features → More cards → Testimonials → CTA` unless the evidence genuinely supports it.
+
+### Disabled defaults: require an explicit user request
+
+The following devices are disabled. Do not introduce them, suggest them, derive them from references, or use them as exploratory options unless the user's current request explicitly asks for that exact device. A screenshot, retrieved reference, inferred brand mood, existing trend, or claim that the device is “justified” is not permission. An explicit user request overrides this block only for the device requested; it does not unlock the rest of the template.
+
+- all-caps or CSS-transformed-uppercase eyebrows, kickers, overlines, category labels, metadata, navigation, buttons, or footer copy;
+- visibly letter-spaced microcopy used as an aesthetic signal, regardless of casing;
+- decorative sequence labels such as `01`, `02`, `03`, or `1/4` when the sequence is not required by the task;
+- a large pale numeral, index, or chapter marker used as background decoration;
+- a horizontal strip of three or four equal statistic cells, feature cells, or taxonomy cells;
+- metric rails built as `large value + small label`, especially with vertical dividers;
+- equal-column rows whose primary purpose is to make sparse content look structured;
+- the repeated section formula `small label → oversized headline → supporting paragraph`;
+- an oversized neutral sans-serif sentence used as the main visual device for a section;
+- short manifesto constructions such as `Less X. More Y.`, `Built for X. Designed for Y.`, or vague declarations ending in a period;
+- thin full-width rules, visible guide grids, or hairline dividers added mainly to create an editorial-tech appearance;
+- labels such as `STUDY`, `INTENT`, `FOCUS`, `CHARACTER`, `SYSTEM`, `SURFACES`, or `CONTRAST` when they describe the design rather than user-facing information;
+- outlined micro-buttons or arrow CTAs with uppercase or tracked text as decorative punctuation;
+- generic abstract circles, arcs, gradients, silhouettes, or diagrams used instead of meaningful media;
+- repeating the product name as a giant wordmark in multiple sections.
+
+Default to sentence case, natural tracking, content-sized headings, and layouts shaped by the actual information. Acronyms, legal names, trademarks, data units, and user-supplied capitalization remain unchanged; this is not permission to style surrounding UI text in uppercase.
+
+When editing an existing interface, do not reproduce a disabled pattern in new work. Leave an existing instance untouched only when it is outside the requested scope. If it is inside scope, replace it unless the user explicitly asks to preserve it.
+
+Run the **swap test**: if the product name and nouns could be exchanged for an unrelated luxury car, AI startup, architecture studio, or fashion brand without changing the layout or copy, the result is generic. Rebuild from product-specific content and behavior.
 
 Every meaningful choice must improve hierarchy, narrative, clarity, emphasis, rhythm, information organization, interaction, brand character, tension, surprise, or memorability. If an element only decorates, remove it.
 
@@ -224,7 +267,13 @@ Review and implement accessibility before visual polish.
 - Keep mobile input text at least `16px`; do not disable user zoom.
 - Use typography as structure when the design DNA supports it; boxes are not the default solution to hierarchy.
 
-## Surfaces and icon craft
+## Surfaces, imagery, and icon craft
+
+Match the representation method to the subject's complexity. Usually avoid constructing recognizable complex real-world subjects—cars, people, animals, machinery, architecture, or branded products—from CSS boxes, basic SVG paths, polygons, gradients, or canvas primitives when the design depends on believable proportions or model-specific fidelity. A crude geometric approximation should not be labeled as a specific product model, instead you can use images from online, or generate them.
+
+Prefer, in order: user-supplied media; an existing repository asset; a retrieved, licensed reference asset; an appropriate product render, photograph, or generated image; or a composition that does not require depicting the subject. If none is available, expose the missing-asset limitation instead of silently fabricating a low-fidelity substitute.
+
+Primitive-built visuals remain appropriate for icons, simple objects, data visualization, maps, wireframes, explanatory diagrams, and intentionally schematic illustrations where realism is not implied. A complex primitive illustration may be used when the user explicitly requests that stylized treatment or when it is clearly secondary, deliberately schematic, and visually convincing at its rendered size. If the silhouette, anatomy, perspective, or defining features are doubtful, replace it.
 
 - For closely nested rounded surfaces with a visible even inset, use `outer radius = inner radius + padding`. Treat layers separated by more than about `24px` or asymmetric spacing as independent surfaces.
 - Prefer optical over mathematical alignment for asymmetric glyphs and icon-text pairs. Fix the SVG when possible.
@@ -263,17 +312,32 @@ Do not accept the first result. Run no more than three focused passes unless the
 
 ### Pass 1 — Structure
 
-Check primary task, content order, hierarchy, scan path, density, responsive priority, and whether the whole page follows one thesis.
+Check primary task, content order, hierarchy, scan path, density, responsive priority, and whether the whole page follows one thesis. Review the section grammar map. Delete or merge any section without a distinct user-facing job.
 
 ### Pass 2 — System
 
-Check tokens, typography, spatial rhythm, surface roles, component consistency, writing, focus states, contrast, and all meaningful UI states.
+Check tokens, typography, spatial rhythm, surface roles, component consistency, writing, focus states, contrast, and all meaningful UI states. Read the page as plain text: replace vague manifesto language, design commentary, repetitive sentence shapes, and decorative taxonomies with product-specific content or remove them.
 
 ### Pass 3 — Character and finish
 
 Check whether the result feels authored without borrowing a source's identity. Find the safest or most predictable section and improve its composition. Remove unnecessary devices. Confirm at least one memorable moment arises from content or behavior, not decoration.
 
-At every pass, search for excessive cards, containers, rounding, centering, uniform spacing, arbitrary gradients or icons, repeated patterns, weak hierarchy, decorative motion, and everything appearing equally important. Redesign affected areas instead of merely polishing them.
+Inspect a zoomed-out full-page screenshot or contact sheet. Then perform three fast diagnostics:
+
+1. **Wireframe test** — ignore color, font personality, and imagery. If several sections reduce to the same boxes and hierarchy, restructure them.
+2. **Silhouette test** — blur or squint at the page. If every section is `small label + huge type + supporting copy`, the composition is repeating even when alignment changes.
+3. **Disabled-pattern test** — compare the result against every disabled default above. Remove each unrequested occurrence; do not defend it as consistent, editorial, premium, or source-inspired.
+
+The result fails the character pass and must be revised when any of these are true:
+
+- any disabled default appears without the user's explicit request;
+- three or more major sections share the same hierarchy sequence;
+- customer-facing copy explains the design instead of the product;
+- generic labels or abstract graphics are carrying empty sections;
+- the page's distinctiveness disappears when color and font are neutralized;
+- the same layout could credibly sell several unrelated products after noun replacement.
+
+At every pass, search for excessive cards, containers, rounding, centering, uniform spacing, arbitrary gradients or icons, repeated patterns, giant neutral headlines, tracked-uppercase microcopy, decorative numerals, empty taxonomies, design-manifesto writing, weak hierarchy, decorative motion, and everything appearing equally important. Redesign affected areas instead of merely polishing them.
 
 Compare the result with source frames and selected corpus records for typography, grid, spacing, components, visual language, originality, creative strength, and AI-slop risk. If the slop risk remains high after three passes, report the remaining limitation rather than looping indefinitely.
 

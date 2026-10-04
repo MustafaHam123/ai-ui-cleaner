@@ -1,8 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { createHash } from "node:crypto";
 import { z } from "zod/v4";
 import { referenceKindSchema, type ReferenceRecord } from "./schema.js";
-import { ReferenceStore } from "./store.js";
+import type { ReferenceRepository, ServerOptions } from "./repository.js";
+import { readBoundedBody, imageSignatureMatches } from "./http-body.js";
 
 function withoutCode(record: ReferenceRecord, includeAssetUrls = true) {
   const { code, ...safeRecord } = record;
@@ -37,7 +37,7 @@ function textResult(value: unknown) {
   };
 }
 
-export function createAiUiCleanerServer(store: ReferenceStore): McpServer {
+export function createAiUiCleanerServer(store: ReferenceRepository, options: ServerOptions = {}): McpServer {
   const server = new McpServer(
     {
       name: "ai_ui_cleaner",
@@ -118,8 +118,17 @@ export function createAiUiCleanerServer(store: ReferenceStore): McpServer {
       if (!asset) {
         return { isError: true, content: [{ type: "text", text: `Asset not found on ${referenceId}: ${assetId}` }] };
       }
+      const maxBytes = options.maxAssetBytes ?? Number.parseInt(process.env.AI_UI_CLEANER_MAX_ASSET_BYTES ?? "8388608", 10);
+      let bytes: Uint8Array;
+      let contentType: string | undefined;
+      if (asset.storageKey && options.readAsset) {
+        const stored = await options.readAsset(asset);
+        bytes = stored.bytes;
+        contentType = stored.mediaType;
+      } else {
+      if (!asset.url) return { isError: true, content: [{ type: "text", text: "This asset requires the Cloudflare storage backend." }] };
       const url = new URL(asset.url);
-      const hosts = allowedAssetHosts();
+      const hosts = options.assetHosts ? new Set(options.assetHosts) : allowedAssetHosts();
       if (!hosts.has(url.hostname.toLowerCase())) {
         return {
           isError: true,
@@ -130,7 +139,6 @@ export function createAiUiCleanerServer(store: ReferenceStore): McpServer {
         };
       }
 
-      const maxBytes = Number.parseInt(process.env.AI_UI_CLEANER_MAX_ASSET_BYTES ?? "8388608", 10);
       const response = await fetch(url, {
         redirect: "error",
         signal: AbortSignal.timeout(10_000),
@@ -139,19 +147,19 @@ export function createAiUiCleanerServer(store: ReferenceStore): McpServer {
       if (!response.ok) {
         return { isError: true, content: [{ type: "text", text: `Asset fetch failed with HTTP ${response.status}.` }] };
       }
-      const contentType = response.headers.get("content-type")?.split(";", 1)[0]?.trim();
-      if (contentType !== asset.mediaType) {
-        return { isError: true, content: [{ type: "text", text: `Asset media type mismatch: expected ${asset.mediaType}, received ${contentType ?? "unknown"}.` }] };
-      }
+      contentType = response.headers.get("content-type")?.split(";", 1)[0]?.trim();
       const declaredLength = Number.parseInt(response.headers.get("content-length") ?? "0", 10);
       if (declaredLength > maxBytes) {
         return { isError: true, content: [{ type: "text", text: `Asset exceeds the ${maxBytes}-byte limit.` }] };
       }
-      const bytes = new Uint8Array(await response.arrayBuffer());
+      bytes = await readBoundedBody(response, maxBytes);
+      }
+      if (contentType !== asset.mediaType) return { isError: true, content: [{ type: "text", text: "Asset media type does not match the curated record." }] };
       if (bytes.byteLength > maxBytes) {
         return { isError: true, content: [{ type: "text", text: `Asset exceeds the ${maxBytes}-byte limit.` }] };
       }
-      const digest = createHash("sha256").update(bytes).digest("hex");
+      if (!imageSignatureMatches(bytes, asset.mediaType)) return { isError: true, content: [{ type: "text", text: "Asset bytes do not match the declared image format." }] };
+      const digest = Buffer.from(await crypto.subtle.digest("SHA-256", Uint8Array.from(bytes))).toString("hex");
       if (asset.sha256 && asset.sha256 !== digest) {
         return { isError: true, content: [{ type: "text", text: "Asset digest did not match the curated record." }] };
       }
@@ -258,22 +266,7 @@ export function createAiUiCleanerServer(store: ReferenceStore): McpServer {
       },
     },
     async () => {
-      const records = await store.all();
-      const countBy = (selector: (record: ReferenceRecord) => string) => Object.fromEntries(
-        [...records.reduce((map, record) => {
-          const key = selector(record);
-          map.set(key, (map.get(key) ?? 0) + 1);
-          return map;
-        }, new Map<string, number>()).entries()].sort(([left], [right]) => left.localeCompare(right)),
-      );
-      return textResult({
-        total: records.length,
-        sources: countBy((record) => record.source.name),
-        kinds: countBy((record) => record.kind),
-        reusableCodeAssets: records.filter((record) => record.code?.reviewStatus === "reviewed" && record.license.reuseAllowed).length,
-        visualAssets: records.reduce((sum, record) => sum + record.assets.length, 0),
-        dataPaths: store.dataPaths,
-      });
+      return textResult(await store.stats());
     },
   );
 

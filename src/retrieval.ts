@@ -32,10 +32,15 @@ interface IndexedRecord {
   vector: Float64Array;
 }
 
-function recordText(record: ReferenceRecord): string {
+export function recordText(record: ReferenceRecord): string {
   return [
     record.title,
     record.summary,
+    record.implementation?.approach ?? "",
+    ...(record.implementation?.steps ?? []),
+    ...(record.implementation?.responsive ?? []),
+    ...(record.implementation?.accessibility ?? []),
+    ...(record.implementation?.adaptation ?? []),
     ...record.whyItWorks,
     ...record.avoidWhen,
     ...record.pageTypes,
