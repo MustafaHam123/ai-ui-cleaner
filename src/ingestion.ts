@@ -10,7 +10,7 @@ const SUSPICIOUS = [
   /javascript:/i,
 ];
 
-function cleanText(value: string): string {
+export function cleanText(value: string): string {
   return value
     .normalize("NFKC")
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
@@ -25,7 +25,7 @@ function cleanList(values: unknown): unknown {
 }
 
 function assertSafeNarrative(record: ReferenceRecord): void {
-  const narrative = [record.title, record.summary, ...record.whyItWorks, ...record.avoidWhen, record.curatorNotes ?? "", record.implementation ? JSON.stringify(record.implementation) : ""].join("\n");
+  const narrative = [record.title, record.summary, ...record.whyItWorks, ...record.avoidWhen, record.curatorNotes ?? "", record.implementation ? JSON.stringify(record.implementation) : "", record.visualMetadata ? JSON.stringify(record.visualMetadata) : "", record.sourceMetadata ? JSON.stringify(record.sourceMetadata) : ""].join("\n");
   const match = SUSPICIOUS.find((pattern) => pattern.test(narrative));
   if (match) throw new Error(`Record ${record.id} contains suspicious instruction-like content matching ${match}`);
 }
@@ -72,6 +72,13 @@ export function normalizeImportedRecord(value: unknown, preserveReviewStatus = f
     title: typeof raw.title === "string" ? cleanText(raw.title) : raw.title,
     summary: typeof raw.summary === "string" ? cleanText(raw.summary) : raw.summary,
     implementation,
+    visualMetadata: raw.visualMetadata && typeof raw.visualMetadata === "object" && !Array.isArray(raw.visualMetadata)
+      ? { ...Object.fromEntries(Object.entries(raw.visualMetadata).map(([key, entry]) => [key, typeof entry === "string" ? cleanText(entry) : cleanList(entry)])),
+          reviewStatus: preserveReviewStatus ? (raw.visualMetadata as Record<string, unknown>).reviewStatus : "machine-captioned" }
+      : raw.visualMetadata,
+    sourceMetadata: raw.sourceMetadata && typeof raw.sourceMetadata === "object" && !Array.isArray(raw.sourceMetadata)
+      ? Object.fromEntries(Object.entries(raw.sourceMetadata).map(([key, entry]) => [key, typeof entry === "string" ? cleanText(entry) : cleanList(entry)]))
+      : raw.sourceMetadata,
     whyItWorks: cleanList(raw.whyItWorks),
     avoidWhen: cleanList(raw.avoidWhen),
     pageTypes: cleanList(raw.pageTypes),

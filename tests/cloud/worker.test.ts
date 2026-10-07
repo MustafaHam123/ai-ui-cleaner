@@ -10,6 +10,8 @@ import { createCloudProxy } from "../../src/cloud-proxy.js";
 import { CloudflareStore, makeChunks, type Env } from "../../cloudflare/store.js";
 import { describeTarget } from "../../scripts/collect.js";
 import { targets } from "../../scripts/corpus-manifest.js";
+import { sourceImageReference } from "../../src/image-metadata.js";
+import { createHash } from "node:crypto";
 
 test("Worker stores real D1/R2 data and exposes authenticated stateless MCP", async t => {
   const bundle = await build({ entryPoints: ["cloudflare/worker.ts"], bundle: true, write: false, format: "esm", platform: "neutral", conditions: ["workerd"], mainFields: ["module", "main"], target: "es2022" });
@@ -17,6 +19,26 @@ test("Worker stores real D1/R2 data and exposes authenticated stateless MCP", as
   t.after(() => mf.dispose());
   const db = await mf.getD1Database("DB");
   const sql = await readFile("cloudflare/migrations/0001_corpus.sql", "utf8");
+  await t.test("public Worker supports anonymous tool calls with real rate limiting and private admin", async () => {
+    const publicWorker = new Miniflare(convertV4MiniflareOptions({ script: bundle.outputFiles[0].text, modules: true, compatibilityDate: "2026-10-04", compatibilityFlags: ["nodejs_compat"], d1Databases: { DB: "public-corpus" }, r2Buckets: ["ASSETS"], bindings: { PUBLIC_MCP: "true", ADMIN_TOKEN: "owner-only" }, ratelimits: { MCP_RATE_LIMIT: { namespace_id: "810274", simple: { limit: 120, period: 60 } } }, log: new Log(LogLevel.NONE) }));
+    try {
+      const publicDb = await publicWorker.getD1Database("DB");
+      for (const statement of sql.trim().split(/(?=^CREATE|^PRAGMA)/m).map(s => s.trim()).filter(Boolean)) await publicDb.prepare(statement).run();
+      const client = new Client({ name: "anonymous", version: "1" });
+      const publicFetch: typeof fetch = async (input, init) => {
+        const req = new Request(input, init);
+        const response = await publicWorker.dispatchFetch(req.url, { method: req.method, headers: Object.fromEntries(req.headers), body: req.body ? new Uint8Array(await req.arrayBuffer()) : undefined });
+        return new Response(await response.arrayBuffer(), { status: response.status, headers: Object.fromEntries(response.headers) });
+      };
+      try {
+        await client.connect(new StreamableHTTPClientTransport(new URL("https://public.test/mcp"), { fetch: publicFetch }));
+        assert.equal((await client.listTools()).tools.length, 5);
+        const stats = await client.callTool({ name: "reference_stats", arguments: {} });
+        assert.equal((stats.structuredContent as { total: number }).total, 0);
+        assert.equal((await publicWorker.dispatchFetch("https://public.test/admin/stats")).status, 401);
+      } finally { await client.close(); }
+    } finally { await publicWorker.dispose(); }
+  });
   for (const statement of sql.trim().split(/(?=^CREATE|^PRAGMA)/m).map(s => s.trim()).filter(Boolean)) await db.prepare(statement).run();
   const request = (pathname: string, body?: unknown, auth = "test-admin") => mf.dispatchFetch(`https://corpus.test${pathname}`, { method: body === undefined ? "GET" : "POST", headers: { authorization: `Bearer ${auth}`, "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
   const record = describeTarget(targets[0], "**License:** MIT", new Date().toISOString());
@@ -105,5 +127,31 @@ test("Worker stores real D1/R2 data and exposes authenticated stateless MCP", as
         assert.equal((stats.structuredContent as { total: number }).total, 1);
       } finally { await localClient.close(); await proxy.close(); }
     } finally { globalThis.fetch = nativeFetch; }
+  });
+  await t.test("owner can ingest source-only keyword references without consuming AI quota", async () => {
+    const sourceRecord = sourceImageReference({ sha256: createHash("sha256").update(png).digest("hex"), mediaType: "image/png",
+      sourceImageUrl: "https://cdn.dribbble.com/userupload/1/file/example.png", sourceUrl: "https://dribbble.com/shots/123-Route-map",
+      sourceTitle: "Dispatch route map", sourceDescription: "logistics delivery dispatch route sidebar", storageKey: "assets/test.png", localPath: "unused", bytes: png.length })!;
+    const response = await request("/admin/ingest", { record: sourceRecord, indexSemantic: false });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json() as { semanticIndexed: boolean }).semanticIndexed, false);
+    const search = await client.callTool({ name: "search_references", arguments: { query: "dispatch route map", limit: 3 } });
+    const hits = (search.structuredContent as { results: Array<{ id: string; sourceMetadata?: { reviewStatus: string } }> }).results;
+    assert.equal(hits[0].id, sourceRecord.id);
+    assert.equal(hits[0].sourceMetadata?.reviewStatus, "source-text-only");
+    const asset = await client.callTool({ name: "get_reference_asset", arguments: { referenceId: sourceRecord.id, assetId: sourceRecord.assets[0].id } });
+    assert.equal(asset.isError, undefined);
+    const store = new CloudflareStore({ DB: db as unknown as Env["DB"], ASSETS: {} as Env["ASSETS"], AI: { run: async () => { throw new Error("Should not call AI"); } } as unknown as Env["AI"], VECTORS: {} as Env["VECTORS"] });
+    assert.equal((await store.upsert(sourceRecord, false)).semanticIndexed, false);
+    const quarantine = await request("/admin/exclude", { id: sourceRecord.id });
+    assert.equal(quarantine.status, 200);
+    assert.equal((await quarantine.json() as { excluded: boolean }).excluded, true);
+    assert.equal(await store.get(sourceRecord.id), undefined);
+    const hidden = await store.search({ query: "dispatch route map" });
+    assert.ok(!hidden.some(hit => hit.record.id === sourceRecord.id));
+    const retained = await db.prepare("SELECT record_json FROM ui_references WHERE id=?").bind(sourceRecord.id).first<{ record_json: string }>();
+    assert.ok(JSON.parse(retained!.record_json).tags.includes("exclude-from-ui-search"));
+    assert.equal((await request("/admin/exclude", { id: "another-resource" })).status, 400);
+    assert.equal((await mf.dispatchFetch("https://corpus.test/admin/exclude", { method: "POST", body: JSON.stringify({ id: sourceRecord.id }) })).status, 401);
   });
 });

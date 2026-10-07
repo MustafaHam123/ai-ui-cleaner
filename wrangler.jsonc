@@ -4,6 +4,8 @@
   "main": "cloudflare/worker.ts",
   "compatibility_date": "2026-10-04",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": { "PUBLIC_MCP": "false" },
+  "ratelimits": [{ "name": "MCP_RATE_LIMIT", "namespace_id": "810274", "simple": { "limit": 120, "period": 60 } }],
   "d1_databases": [{ "binding": "DB", "database_name": "ai-ui-cleaner", "database_id": "REPLACE_AFTER_PROVISIONING", "migrations_dir": "cloudflare/migrations" }],
   "r2_buckets": [{ "binding": "ASSETS", "bucket_name": "ai-ui-cleaner-corpus" }],
   "vectorize": [{ "binding": "VECTORS", "index_name": "ai-ui-cleaner" }],

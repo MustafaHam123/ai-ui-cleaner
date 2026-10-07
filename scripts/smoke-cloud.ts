@@ -5,13 +5,13 @@ loadLocalEnvironment();
 const local = process.argv.includes("--local");
 const base = local ? "http://127.0.0.1:8787" : process.env.AI_UI_CLEANER_CLOUD_URL;
 const token = local ? "local-development-reader" : process.env.MCP_READ_TOKEN;
-if (!base || !token) throw new Error("Configure the cloud origin and MCP_READ_TOKEN, or use --local with the emulator");
+if (!base) throw new Error("Configure the cloud origin, or use --local with the emulator");
 const origin = new URL(base);
 if (origin.protocol !== "https:" && !local) throw new Error("Use HTTPS for cloud verification");
 if (origin.username || origin.password || origin.pathname !== "/" || origin.search || origin.hash) throw new Error("Use a bare Worker origin");
 const client = new Client({ name: "ai-ui-cleaner-smoke", version: "0.1.0" });
 try {
-  await client.connect(new StreamableHTTPClientTransport(new URL("/mcp", origin), { requestInit: { headers: { authorization: `Bearer ${token}` }, redirect: "error" } }));
+  await client.connect(new StreamableHTTPClientTransport(new URL("/mcp", origin), { requestInit: { headers: token ? { authorization: `Bearer ${token}` } : {}, redirect: "error" } }));
   const stats = await client.callTool({ name: "reference_stats", arguments: {} });
   if (stats.isError) throw new Error("Corpus stats unavailable");
   console.log("Corpus:", JSON.stringify(stats.structuredContent));

@@ -51,4 +51,5 @@ test("cloud provisioning reuses matching resources and creates missing filter in
   assert.equal((await provisionResources(api, "a".repeat(32))).databaseId, "existing-db");
   assert.equal(calls.filter(c => c.method === "POST").length, 2);
   assert.ok(calls.filter(c => c.method === "POST").every(c => c.endpoint.endsWith("metadata_index/create")));
+  assert.ok(calls.every(c => !c.endpoint.includes("quran-mode-assets") && !c.endpoint.includes("/zones/") && !c.endpoint.includes("/routes") && !c.endpoint.includes("/domains")));
 });

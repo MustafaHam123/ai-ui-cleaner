@@ -11,9 +11,12 @@ export interface Env {
   AI?: Ai;
   ADMIN_TOKEN?: string;
   MCP_READ_TOKEN?: string;
+  PUBLIC_MCP?: string;
+  MCP_RATE_LIMIT?: { limit(options: { key: string }): Promise<{ success: boolean }> };
   ASSET_HOSTS?: string;
 }
 export const EMBEDDING_MODEL = "@cf/baai/bge-base-en-v1.5";
+const visibleSql = (alias = "r") => `NOT EXISTS(SELECT 1 FROM json_each(${alias}.record_json, '$.tags') excluded WHERE excluded.value = 'exclude-from-ui-search')`;
 
 export async function makeChunks(record: ReferenceRecord) {
   const text = recordText(record) + (record.code?.reviewStatus === "reviewed" && record.license.reuseAllowed ? `\nReviewed ${record.code.language} implementation reference:\n${record.code.content}` : "");
@@ -28,7 +31,7 @@ export async function makeChunks(record: ReferenceRecord) {
 }
 
 function filterSql(options: SearchOptions, alias = "r") {
-  const clauses: string[] = [];
+  const clauses: string[] = [visibleSql(alias)];
   const values: (string | number)[] = [];
   for (const [field, targets] of Object.entries({ pageTypes: options.pageType ? [options.pageType] : [], industries: options.industry ? [options.industry] : [], moods: options.mood ? [options.mood] : [], components: options.components, technologies: options.technologies })) {
     if (!targets?.length) continue;
@@ -48,16 +51,16 @@ export class CloudflareStore implements ReferenceRepository {
   constructor(private env: Env) {}
 
   async get(id: string): Promise<ReferenceRecord | undefined> {
-    const row = await this.env.DB.prepare("SELECT record_json FROM ui_references WHERE id = ?").bind(id).first<{ record_json: string }>();
+    const row = await this.env.DB.prepare(`SELECT record_json FROM ui_references r WHERE id = ? AND ${visibleSql()}`).bind(id).first<{ record_json: string }>();
     return row ? parseReferenceRecord(JSON.parse(row.record_json)) : undefined;
   }
 
   async stats(): Promise<CorpusStats> {
     const [totals, sources, kinds, chunks] = await Promise.all([
-      this.env.DB.prepare("SELECT count(*) total, coalesce(sum(asset_count),0) visualAssets, coalesce(sum(reuse_allowed = 1 AND code_review = 'reviewed'),0) reusableCodeAssets FROM ui_references").first<{ total: number; visualAssets: number; reusableCodeAssets: number }>(),
-      this.env.DB.prepare("SELECT source label, count(*) count FROM ui_references GROUP BY source").all<{ label: string; count: number }>(),
-      this.env.DB.prepare("SELECT kind label, count(*) count FROM ui_references GROUP BY kind").all<{ label: string; count: number }>(),
-      this.env.DB.prepare("SELECT count(*) count FROM reference_chunks WHERE vector_indexed = 1").first<{ count: number }>(),
+      this.env.DB.prepare(`SELECT count(*) total, coalesce(sum(asset_count),0) visualAssets, coalesce(sum(reuse_allowed = 1 AND code_review = 'reviewed'),0) reusableCodeAssets FROM ui_references r WHERE ${visibleSql()}`).first<{ total: number; visualAssets: number; reusableCodeAssets: number }>(),
+      this.env.DB.prepare(`SELECT source label, count(*) count FROM ui_references r WHERE ${visibleSql()} GROUP BY source`).all<{ label: string; count: number }>(),
+      this.env.DB.prepare(`SELECT kind label, count(*) count FROM ui_references r WHERE ${visibleSql()} GROUP BY kind`).all<{ label: string; count: number }>(),
+      this.env.DB.prepare(`SELECT count(*) count FROM reference_chunks c JOIN ui_references r ON r.id=c.reference_id WHERE vector_indexed = 1 AND ${visibleSql()}`).first<{ count: number }>(),
     ]);
     return { total: totals?.total ?? 0, visualAssets: totals?.visualAssets ?? 0, reusableCodeAssets: totals?.reusableCodeAssets ?? 0,
       sources: Object.fromEntries(sources.results.map(r => [r.label, r.count])), kinds: Object.fromEntries(kinds.results.map(r => [r.label, r.count])),
@@ -84,7 +87,7 @@ export class CloudflareStore implements ReferenceRepository {
       // Don't turn a match inside generic guidance or a CSS pseudo-element
       // into a supposed design reference. Keyword hits need task-specific
       // evidence; semantic retrieval can still find paraphrased concepts.
-      const anchors = new Set(tokenize([record.title, record.summary, ...record.components, ...record.tags, ...(record.implementation?.steps ?? [])].join(" ")));
+      const anchors = new Set(tokenize([record.title, record.summary, ...record.components, ...record.tags, ...(record.visualMetadata?.queryAliases ?? []), ...(record.implementation?.steps ?? [])].join(" ")));
       if (!terms.some(term => anchors.has(term))) continue;
       seen.add(row.reference_id);
       merge(record, seen.size, "D1 FTS5 task-specific keyword match");
@@ -129,7 +132,7 @@ export class CloudflareStore implements ReferenceRepository {
     return selected;
   }
 
-  async upsert(record: ReferenceRecord) {
+  async upsert(record: ReferenceRecord, indexSemantic = true) {
     const chunks = await makeChunks(record);
     const old = await this.env.DB.prepare("SELECT id FROM reference_chunks WHERE reference_id=?").bind(record.id).all<{ id: string }>();
     const statements: D1PreparedStatement[] = [
@@ -138,7 +141,7 @@ export class CloudflareStore implements ReferenceRepository {
       ...chunks.map(c => this.env.DB.prepare("INSERT INTO reference_chunks(id,reference_id,content) VALUES(?,?,?)").bind(c.id, c.referenceId, c.content)),
     ];
     await this.env.DB.batch(statements);
-    if (this.env.AI && this.env.VECTORS) {
+    if (indexSemantic && this.env.AI && this.env.VECTORS) {
       // Stale vectors are also excluded by joining against the current D1 chunks.
       if (old.results.length) await this.env.VECTORS.deleteByIds(old.results.map(c => c.id));
       const embeddings = await this.env.AI.run(EMBEDDING_MODEL, { text: chunks.map(c => c.content) }) as { data: number[][] };
@@ -146,6 +149,16 @@ export class CloudflareStore implements ReferenceRepository {
       await this.env.VECTORS.upsert(chunks.map((c, i) => ({ id: c.id, values: embeddings.data[i], metadata: { referenceId: record.id, kind: record.kind, source: record.source.name, reuseAllowed: record.license.reuseAllowed } })));
       await this.env.DB.batch(chunks.map(c => this.env.DB.prepare("UPDATE reference_chunks SET vector_indexed=1 WHERE id=?").bind(c.id)));
     }
-    return { id: record.id, chunks: chunks.length, semanticIndexed: Boolean(this.env.AI && this.env.VECTORS) };
+    return { id: record.id, chunks: chunks.length, semanticIndexed: Boolean(indexSemantic && this.env.AI && this.env.VECTORS) };
+  }
+
+  // Reversible quarantine retains records, chunks and R2 assets without AI calls.
+  async excludeFromUiSearch(id: string) {
+    const row = await this.env.DB.prepare("SELECT record_json FROM ui_references WHERE id = ?").bind(id).first<{ record_json: string }>();
+    if (!row) return { id, excluded: true, existed: false };
+    const record = parseReferenceRecord(JSON.parse(row.record_json));
+    record.tags = [...new Set([...record.tags, "exclude-from-ui-search"])];
+    await this.env.DB.prepare("UPDATE ui_references SET record_json=?, updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(JSON.stringify(record), id).run();
+    return { id, excluded: true, existed: true };
   }
 }

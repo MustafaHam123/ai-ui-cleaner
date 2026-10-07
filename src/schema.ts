@@ -37,6 +37,34 @@ export const implementationSchema = z.object({
   adaptation: z.array(z.string().min(3).max(700)).min(1).max(8),
 });
 
+// Captions aid discovery; they are not curator review or proof of implementation.
+export const visualMetadataSchema = z.object({
+  version: z.literal(1),
+  captionModel: z.string().min(1).max(150),
+  captionedAt: z.string().datetime(),
+  reviewStatus: z.enum(["machine-captioned", "human-reviewed"]),
+  confidence: z.enum(["low", "medium", "high"]),
+  presentationType: z.enum(["single-screen", "multi-screen-montage", "device-mockup", "component-study", "unclear"]),
+  visibleDescription: z.string().min(20).max(1500),
+  layout: z.string().min(10).max(700),
+  palette: z.array(z.string().max(80)).max(8),
+  typography: z.string().max(400),
+  imagery: z.string().max(400),
+  useWhen: z.array(z.string().min(5).max(250)).min(1).max(4),
+  queryAliases: z.array(z.string().min(3).max(160)).min(2).max(8),
+  transferablePrinciples: z.array(z.string().min(10).max(350)).min(1).max(4),
+  limitations: z.array(z.string().min(5).max(300)).min(1).max(6),
+});
+
+export const sourceMetadataSchema = z.object({
+  reviewStatus: z.literal("source-text-only"),
+  descriptionEvidence: z.enum(["source-provided-alt-text", "source-url-title", "source-title"]),
+  sourceTitle: z.string().max(200).optional(),
+  sourceDescription: z.string().max(2000).optional(),
+  queryAliases: z.array(z.string().min(3).max(160)).min(1).max(8),
+  needsVisualInspection: z.literal(true),
+});
+
 export const referenceRecordSchema = z.object({
   id: z.string().regex(/^[a-z0-9][a-z0-9._-]{2,127}$/),
   title: z.string().min(2).max(200),
@@ -49,6 +77,8 @@ export const referenceRecordSchema = z.object({
   kind: referenceKindSchema,
   summary: z.string().min(10).max(4_000),
   implementation: implementationSchema.optional(),
+  visualMetadata: visualMetadataSchema.optional(),
+  sourceMetadata: sourceMetadataSchema.optional(),
   usage: z.literal("reference-only").default("reference-only"),
   whyItWorks: z.array(z.string().min(3).max(500)).min(1).max(20),
   avoidWhen: z.array(z.string().min(3).max(500)).max(20).default([]),

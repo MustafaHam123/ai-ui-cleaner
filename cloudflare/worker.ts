@@ -22,13 +22,22 @@ export default {
     if (url.pathname.startsWith("/admin/")) {
       if (!await authorized(request, env.ADMIN_TOKEN)) return Response.json({ error: "Unauthorized" }, { status: 401 });
       if (url.pathname === "/admin/stats" && request.method === "GET") return Response.json(await store.stats());
+      if (url.pathname === "/admin/exclude" && request.method === "POST") {
+        try {
+          const input = JSON.parse(new TextDecoder().decode(await readBoundedBody(request, 1024)));
+          if (typeof input.id !== "string" || !/^dribbble-[a-f0-9]{32}$/.test(input.id)) return Response.json({ error: "Invalid corpus image ID" }, { status: 400 });
+          return Response.json(await store.excludeFromUiSearch(input.id));
+        } catch (error) { return Response.json({ error: error instanceof RangeError ? "Request too large" : "Exclusion failed" }, { status: error instanceof RangeError ? 413 : 503 }); }
+      }
       if (url.pathname === "/admin/ingest" && request.method === "POST") {
         try {
           const raw = new TextDecoder().decode(await readBoundedBody(request, 512_000));
           const input = JSON.parse(raw);
           const record = normalizeImportedRecord(input.record ?? input, input.preserveReviewStatus === true);
           if (!record.implementation) return Response.json({ error: "Every cloud reference requires implementation guidance" }, { status: 400 });
-          try { return Response.json(await store.upsert(record)); }
+          // Owner-only ingestion can deliberately stage keyword records while
+          // AI quota is unavailable. Public MCP cannot change this setting.
+          try { return Response.json(await store.upsert(record, input.indexSemantic !== false)); }
           catch (error) { console.error("Storage or embedding ingestion failed", error); return Response.json({ error: "Storage or embedding ingestion failed; retry this record. Keyword data may already be saved." }, { status: 503 }); }
         } catch (error) { return Response.json({ error: error instanceof Error ? error.message : "Ingestion failed" }, { status: error instanceof RangeError ? 413 : 400 }); }
       }
@@ -44,8 +53,19 @@ export default {
       return new Response("Not found", { status: 404 });
     }
     if (url.pathname !== "/mcp") return Response.json({ service: "ai-ui-cleaner", endpoint: "/mcp", protocol: "MCP Streamable HTTP" }, { status: url.pathname === "/" ? 200 : 404 });
-    if (!await authorized(request, env.MCP_READ_TOKEN)) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (env.PUBLIC_MCP !== "true" && !await authorized(request, env.MCP_READ_TOKEN)) return Response.json({ error: "Unauthorized" }, { status: 401 });
     if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
+    if (env.PUBLIC_MCP === "true") {
+      if (!env.MCP_RATE_LIMIT) return Response.json({ error: "Public access is not configured safely" }, { status: 503 });
+      // Anonymous clients have no stable account ID; shared-network users share this allowance.
+      const key = request.headers.get("CF-Connecting-IP") ?? "anonymous";
+      if (!(await env.MCP_RATE_LIMIT.limit({ key })).success) return Response.json({ error: "Too many requests" }, { status: 429, headers: { "retry-after": "60" } });
+    }
+    let boundedRequest: Request;
+    try {
+      const bytes = await readBoundedBody(request, 64_000);
+      boundedRequest = new Request(request.url, { method: "POST", headers: request.headers, body: new Uint8Array(bytes).buffer });
+    } catch { return Response.json({ error: "MCP request exceeds 64 KB" }, { status: 413 }); }
     const server = createAiUiCleanerServer(store, {
       assetHosts: (env.ASSET_HOSTS ?? "").split(",").filter(Boolean), maxAssetBytes: 8_388_608,
       readAsset: async asset => {
@@ -56,7 +76,7 @@ export default {
     });
     const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
     await server.connect(transport);
-    try { return await transport.handleRequest(request); }
+    try { return await transport.handleRequest(boundedRequest); }
     finally { await server.close(); }
   },
 };

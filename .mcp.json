@@ -1,10 +1,8 @@
 {
   "mcpServers": {
     "ai_ui_cleaner": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/index.cjs"],
-      "cwd": "${CLAUDE_PLUGIN_ROOT}"
+      "type": "http",
+      "url": "https://ai-ui-cleaner.ai-ui-cleaner.workers.dev/mcp"
     }
   }
 }

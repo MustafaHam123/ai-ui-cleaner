@@ -9,7 +9,11 @@ AI UI Cleaner is a reference-grounded interface creation, review, and repair plu
 
 The committed seed records are original abstract design patterns. Harvested reference data, code, source snapshots, and preview images belong outside Git. The Cloudflare backend and bounded collector are implemented; see [the cloud corpus setup](docs/cloudflare.md) for deployment, existing collection coverage, and imports.
 
+For a shared public library, the owner runs `npm run cloud:setup` after one browser login. This creates a dedicated `ai-ui-cleaner-corpus` R2 bucket, D1 database and semantic search index, deploys the MCP on workers.dev only, and automatically uploads the existing corpus. It never uses `quran-mode-assets` or binds existing websites/domains. Installers need only the public MCP URL, not the owner's Cloudflare credentials. See the cloud guide for quota limits and verification.
+
 ## Quick start
+
+The plugin's MCP configurations connect to the shared public library at `https://ai-ui-cleaner.ai-ui-cleaner.workers.dev/mcp`. Installers do not need Node, Cloudflare login, database downloads, or API keys for that connection. The commands below are for local development, not required for the hosted plugin.
 
 ```bash
 npm install
@@ -36,21 +40,35 @@ The endpoint is available at `http://localhost:3000/mcp`; health information is 
 - `plugin.json`, `mcp.json`, and `skills/` form the portable Agent Plugins package.
 - `.codex-plugin/plugin.json` is the Codex compatibility manifest.
 - `.claude-plugin/plugin.json` and `.mcp.json` support Claude-compatible installation.
-- Both local manifests start the committed, bundled `dist/index.cjs`, so plugin installs do not need production dependencies. Run `npm run build` whenever server source changes.
+- Both plugin manifests connect directly to the hosted public MCP. The committed `dist/index.cjs` remains available for local development or stdio-only hosts; rebuild it whenever server source changes.
 
-For ChatGPT web usage, deploy the server in HTTP mode to a stable HTTPS endpoint and change the MCP entry to:
+### Connect the running public MCP
 
-```json
-{
-  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
-  "mcpServers": {
-    "ai_ui_cleaner": {
-      "type": "streamable-http",
-      "url": "https://your-domain.example/mcp"
-    }
-  }
-}
+Nothing needs to run locally for the hosted corpus. Use the full `/mcp` URL, not the homepage. No API key or OAuth login is required.
+
+Codex CLI (also shared with compatible desktop/IDE settings):
+
+```bash
+codex mcp add ai_ui_cleaner --url https://ai-ui-cleaner.ai-ui-cleaner.workers.dev/mcp
+codex mcp list
 ```
+
+Claude Code:
+
+```bash
+claude mcp add --transport http --scope user ai_ui_cleaner https://ai-ui-cleaner.ai-ui-cleaner.workers.dev/mcp
+claude mcp list
+```
+
+Start a new session after connecting. If the plugin already supplies this MCP, do not add a second copy. A connection adds tools, not the skill instructions: install the bundled skill/plugin too, or copy `skills/ai-ui-cleaner` into the target project's `.agents/skills/` for Codex or `.claude/skills/` for Claude Code. Invoke `$ai-ui-cleaner` in Codex or `/ai-ui-cleaner` for a standalone Claude Code skill. Plugin-installed Claude skills may have a plugin-qualified command name.
+
+The skill now defaults to the hosted corpus for reference discovery: search compact cards, fetch selected records, view their images, then adapt content relationships. General web search is a fallback for a concrete coverage gap, not the primary source.
+
+To test from chat, ask: `Use AI UI Cleaner to search for doctor appointment references, inspect two screenshots, and explain what can be adapted. Do not implement yet.` You should see `search_references`, `get_reference` and `get_reference_asset` calls. A `/mcp` URL is a protocol endpoint, so opening it as an ordinary browser page is not a connection test.
+
+For a developer-side end-to-end check, run `npm run mcp:check` after installing dependencies. It verifies anonymous tool discovery, corpus stats, one normal search, selected metadata and its screenshot. Normal search may use a query embedding; this check does not caption images or alter the corpus.
+
+Official setup references: [Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli), [Codex skills](https://learn.chatgpt.com/docs/build-skills), [Claude Code MCP](https://code.claude.com/docs/en/mcp), and [Claude Code skills](https://code.claude.com/docs/en/skills).
 
 Do not commit credentials to either MCP configuration.
 
@@ -88,6 +106,7 @@ The following fields are important for retrieval quality:
 - `summary`, `whyItWorks`, and `avoidWhen`
 - `implementation`: general approach, pattern-specific steps, responsive/accessibility notes, and adaptation instructions
 - `source.name`, `source.url`, author, capture date, and license
+- `visualMetadata`: actual image observations, presentation type, query aliases, task fit, adaptation principles, machine-caption status, confidence and evidence gaps
 - Technology and framework requirements for reusable code
 
 Normalize exports from 21st.dev, CodePen, Figma, Dribbble, recent.design, SaaS galleries, or another permitted source into this schema. Store screenshots on controlled object storage and add their URL, dimensions, media type, alt text, and SHA-256 to `assets`. Use official APIs or authorized exports where available. Respect robots rules, terms, access controls, attribution, and asset/code licenses; a publicly viewable page does not automatically permit republication or code reuse.
@@ -126,7 +145,9 @@ Object-storage URLs should use a controlled hostname listed in `AI_UI_CLEANER_AS
 
 The built-in retriever requires no embedding API key. It combines BM25-style term scoring with a deterministic hashed token/trigram vector, then applies explicit metadata boosts and source/type diversity penalties. This is suitable for local development and predictable testing.
 
-The Cloudflare backend uses D1 FTS5 plus Workers AI embeddings and Vectorize, with rank fusion and source/type diversity. Set `AI_UI_CLEANER_CLOUD_URL` and `MCP_READ_TOKEN` to make the stdio server forward to the hosted corpus. Local emulation runs FTS5 without the semantic service. See [deployment and testing](docs/cloudflare.md).
+The Cloudflare backend uses D1 FTS5 plus Workers AI embeddings and Vectorize, with rank fusion and source/type diversity. For a stdio-only host, set `AI_UI_CLEANER_CLOUD_URL` to make the bundled server forward to the hosted corpus. The public deployment needs no read token; `MCP_READ_TOKEN` is only for private deployments. Local emulation runs FTS5 without the semantic service. See [deployment and testing](docs/cloudflare.md).
+
+For image references, direct assistant inspection or Cloudflare AI produces image-specific descriptive metadata with accurate captioner attribution. Descriptions support keyword retrieval and, when separately enabled, semantic embeddings; captioning alone does not generate embeddings. This is not training a new model or searching pixels directly. Search cards are concise, selected records carry full guidance, and the skill requires viewing the actual image. Machine captions remain distinct from curator review and never establish a content reuse license.
 
 ## Environment
 

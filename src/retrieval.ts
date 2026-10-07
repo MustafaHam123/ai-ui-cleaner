@@ -33,6 +33,20 @@ interface IndexedRecord {
 }
 
 export function recordText(record: ReferenceRecord): string {
+  if (record.sourceMetadata) {
+    return [record.title, record.sourceMetadata.sourceDescription ?? "", ...record.sourceMetadata.queryAliases].join(" ");
+  }
+  if (record.visualMetadata) {
+    // Keep discovery centered on the individual image. Repeated safety and
+    // workflow boilerplate belongs in get_reference, not every embedding.
+    const visual = record.visualMetadata;
+    return [record.title, visual.visibleDescription, visual.layout,
+      ...visual.palette, visual.typography, visual.imagery,
+      ...record.pageTypes, ...record.industries, ...record.components, ...record.moods,
+      ...visual.queryAliases, ...visual.useWhen, ...visual.transferablePrinciples,
+      record.implementation?.approach ?? "", ...(record.implementation?.steps ?? []),
+    ].join(" ");
+  }
   return [
     record.title,
     record.summary,
@@ -66,6 +80,7 @@ function intersectsNormalized(values: string[], targets?: string[]): boolean {
 }
 
 function passesFilters(record: ReferenceRecord, filters: SearchFilters): boolean {
+  if (record.tags.includes("exclude-from-ui-search")) return false;
   if (!includesNormalized(record.pageTypes, filters.pageType)) return false;
   if (!includesNormalized(record.industries, filters.industry)) return false;
   if (!includesNormalized(record.moods, filters.mood)) return false;
