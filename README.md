@@ -40,9 +40,14 @@ The endpoint is available at `http://localhost:3000/mcp`; health information is 
 - `plugin.json`, `mcp.json`, and `skills/` form the portable Agent Plugins package.
 - `.codex-plugin/plugin.json` is the Codex compatibility manifest.
 - `.claude-plugin/plugin.json` and `.mcp.json` support Claude-compatible installation.
+- `.claude-plugin/marketplace.json` is the shared desktop-install catalog (Claude format, also supported by Codex).
 - Both plugin manifests connect directly to the hosted public MCP. The committed `dist/index.cjs` remains available for local development or stdio-only hosts; rebuild it whenever server source changes.
 
-### Connect the running public MCP
+### Install in desktop apps (skill + MCP together)
+
+See [desktop installation](docs/desktop-install.md). The plugin installer downloads the skill from this GitHub repository and connects its bundled MCP configuration to Cloudflare. Adding the MCP URL alone does **not** download the skill. The reference database and images stay on Cloudflare, outside the plugin download.
+
+### Connect only the running public MCP
 
 Nothing needs to run locally for the hosted corpus. Use the full `/mcp` URL, not the homepage. No API key or OAuth login is required.
 
@@ -62,7 +67,7 @@ claude mcp list
 
 Start a new session after connecting. If the plugin already supplies this MCP, do not add a second copy. A connection adds tools, not the skill instructions: install the bundled skill/plugin too, or copy `skills/ai-ui-cleaner` into the target project's `.agents/skills/` for Codex or `.claude/skills/` for Claude Code. Invoke `$ai-ui-cleaner` in Codex or `/ai-ui-cleaner` for a standalone Claude Code skill. Plugin-installed Claude skills may have a plugin-qualified command name.
 
-The skill now defaults to the hosted corpus for reference discovery: search compact cards, fetch selected records, view their images, then adapt content relationships. General web search is a fallback for a concrete coverage gap, not the primary source.
+The skill first resolves the visual direction (asking when unspecified), searches visual layout terms rather than echoing product nouns, and inspects 3–5 matching screenshots. It reconstructs one primary visible frame, checks the layout, then swaps in the user's content. General web search is a fallback for a concrete coverage gap, not the primary source.
 
 To test from chat, ask: `Use AI UI Cleaner to search for doctor appointment references, inspect two screenshots, and explain what can be adapted. Do not implement yet.` You should see `search_references`, `get_reference` and `get_reference_asset` calls. A `/mcp` URL is a protocol endpoint, so opening it as an ordinary browser page is not a connection test.
 

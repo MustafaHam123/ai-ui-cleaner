@@ -1,0 +1,15 @@
+{
+  "name": "ai-ui-cleaner-marketplace",
+  "description": "Reference-grounded UI creation and review with a shared public corpus.",
+  "owner": { "name": "Mustafa Hameed" },
+  "plugins": [
+    {
+      "name": "ai-ui-cleaner",
+      "source": "./",
+      "description": "The AI UI Cleaner skill and hosted reference-search MCP, installed together.",
+      "version": "0.1.0",
+      "category": "Productivity",
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_USE" }
+    }
+  ]
+}
