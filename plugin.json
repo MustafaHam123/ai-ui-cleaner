@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "ai-ui-cleaner",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Create, review, and repair authored interfaces using retrieved code and visual references.",
   "author": {
     "name": "Mustafa Hameed"
@@ -14,7 +14,7 @@
       "interface": {
         "displayName": "AI UI Cleaner",
         "shortDescription": "Create and repair authored product interfaces",
-        "defaultPrompt": "Use $ai-ui-cleaner to create, redesign, or review this interface with its design DNA and retrieved references."
+        "defaultPrompt": "Use $ai-ui-cleaner for this interface: resolve the target platform and vibe, inspect matching RAG screenshots, reconstruct one primary frame, then adapt my content."
       }
     }
   }

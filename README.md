@@ -1,19 +1,99 @@
 # AI UI Cleaner
 
-AI UI Cleaner is a reference-grounded interface creation, review, and repair plugin for GPT/Codex-compatible hosts and Claude Code. It combines:
+AI UI Cleaner bundles a design skill with a public reference-search MCP for Codex (desktop and terminal) and Claude Code (Code tab and terminal). Install the plugin once to get both. No separate skill download, corpus download, Cloudflare account, Node runtime or MCP API key is needed. Your chosen host still needs its normal account/login and internet access.
 
-- A portable Agent Skill that directs Figma and code-based creation, redesign, implementation, and system-level review.
-- An MCP server exposing focused reference-search tools.
-- A local-first hybrid RAG layer with keyword relevance, hashed-vector similarity, metadata boosts, filtering, and diversity reranking.
-- Conservative provenance and code-reuse gates.
+## How it designs
 
-The committed seed records are original abstract design patterns. Harvested reference data, code, source snapshots, and preview images belong outside Git. The Cloudflare backend and bounded collector are implemented; see [the cloud corpus setup](docs/cloudflare.md) for deployment, existing collection coverage, and imports.
+1. Resolve the target: mobile app, mobile web, desktop app/web, tablet or responsive website. Ask when unclear.
+2. Resolve the vibe from the brief or supplied design; ask when missing, rather than infer it from the product category.
+3. Search the RAG library for that **surface and visual structure**, not simply the product prompt.
+4. Inspect 3–5 matching screenshots and choose one primary frame.
+5. Reconstruct its visible composition, compare the rendered layout, then replace the content with the user's information.
+6. For responsive sites, inspect a suitable other-viewport reference and adapt the layout—not just shrink desktop.
 
-For a shared public library, the owner runs `npm run cloud:setup` after one browser login. This creates a dedicated `ai-ui-cleaner-corpus` R2 bucket, D1 database and semantic search index, deploys the MCP on workers.dev only, and automatically uploads the existing corpus. It never uses `quran-mode-assets` or binds existing websites/domains. Installers need only the public MCP URL, not the owner's Cloudflare credentials. See the cloud guide for quota limits and verification.
+Existing product requirements and explicit user instructions stay authoritative. Unrequested all-caps labels, decorative numbering, metric strips and crude geometric models remain disabled. Screenshots are evidence, not permission to reuse unlicensed branding, assets or code. Review-only requests do not change files.
 
-## Quick start
+## Install
 
-The plugin's MCP configurations connect to the shared public library at `https://ai-ui-cleaner.ai-ui-cleaner.workers.dev/mcp`. Installers do not need Node, Cloudflare login, database downloads, or API keys for that connection. The commands below are for local development, not required for the hosted plugin.
+The repository is [MustafaHam123/ai-ui-cleaner](https://github.com/MustafaHam123/ai-ui-cleaner). These GitHub instructions install the version **pushed to GitHub**, not uncommitted local changes. The owner must push updated manifests and skills before sharing a new version.
+
+### Codex desktop app
+
+For a local GUI setup, download/clone this repository, open it as a Codex project, restart the app, and open Plugins. Select `ai-ui-cleaner-marketplace`, then install AI UI Cleaner. Codex supports the repository's `.claude-plugin/marketplace.json` catalog. If it is not discovered, use explicit source registration below. [Official marketplace guidance](https://developers.openai.com/plugins/build/plugins).
+
+For GitHub installs, register the source once:
+
+```bash
+codex plugin marketplace add MustafaHam123/ai-ui-cleaner
+```
+
+Then open the app's Plugins page, select that marketplace and install AI UI Cleaner. Start a new chat in your target project and invoke `$ai-ui-cleaner`. An [install link](codex://plugins/install/ai-ui-cleaner?marketplace=ai-ui-cleaner-marketplace) works only after the marketplace is known; it does not register GitHub automatically.
+
+### Codex terminal
+
+Run these in your shell with a current Codex CLI:
+
+```bash
+codex plugin marketplace add MustafaHam123/ai-ui-cleaner
+codex plugin add ai-ui-cleaner@ai-ui-cleaner-marketplace
+codex plugin list --marketplace ai-ui-cleaner-marketplace --json
+```
+
+Start a new Codex session in your target project. Invoke `$ai-ui-cleaner` followed by your task. Local desktop and CLI plugin settings share the same Codex home on the same machine; a different machine/remote host needs its own installation. [Official plugin commands](https://learn.chatgpt.com/docs/developer-commands#codex-plugin).
+
+### Claude Code desktop app
+
+1. Open **Settings → Plugins → Add → Add Marketplace → Add from a repository**.
+2. Enter `https://github.com/MustafaHam123/ai-ui-cleaner` (without `.git`) and select Sync.
+3. Select AI UI Cleaner and Install; choose the appropriate scope.
+4. Start a new local **Code** session in your target project. Invoke `/ai-ui-cleaner:ai-ui-cleaner` or select the skill from the slash-command picker.
+
+The Code tab also offers **+ → Plugins → Add plugin**. Menus depend on app version and organization policy. This is not a promise that the same installation works in Chat, Cowork, WSL or cloud sessions. [GUI repository installation example](https://developers.openai.com/learn/developers-codex-plugin), [Claude Code desktop plugins](https://code.claude.com/docs/en/desktop#install-plugins).
+
+### Claude Code terminal
+
+Inside an interactive Claude Code session:
+
+```text
+/plugin marketplace add MustafaHam123/ai-ui-cleaner
+/plugin install ai-ui-cleaner@ai-ui-cleaner-marketplace
+```
+
+Restart the session, then invoke `/ai-ui-cleaner:ai-ui-cleaner` followed by your task. Use `/plugin` to inspect enabled state and installation scope. These are Claude slash commands, not shell commands. [Official installation example](https://developers.openai.com/learn/developers-codex-plugin).
+
+### Use it
+
+Codex prompt:
+
+```text
+$ai-ui-cleaner Build a responsive Porsche website, desktop-first, bright and restrained with large photography. Find 3–5 matching desktop frames, reconstruct one, then adapt my content and mobile layout.
+```
+
+Claude prompt:
+
+```text
+/ai-ui-cleaner:ai-ui-cleaner Build a mobile app onboarding flow, colorful and playful. Inspect 3–5 mobile app references, reconstruct one primary screen, then adapt my content.
+```
+
+To check the clarification gate, send `Build a cool Porsche website` with the skill invoked and no existing design brief: it should ask about the target and vibe **before searching**. For a reference-only check, specify the target/vibe and add `Do not implement yet; show the selected references and primary frame plan.` Expect `search_references`, `get_reference` and `get_reference_asset` calls and actual image inspection. This verifies behavior, not just connection status.
+
+### Update or troubleshoot
+
+- **Old prompt behavior:** update the marketplace and installed plugin, then start a new session. Changing source files does not change an already cached installation. Codex: `codex plugin marketplace upgrade ai-ui-cleaner-marketplace`, then refresh/reinstall through Plugins. Claude: refresh the marketplace and update the plugin through `/plugin` or the app.
+- **Marketplace missing:** check spelling, repository access and whether the catalog was pushed. For a local checkout, Codex can register it with `codex plugin marketplace add /absolute/path/to/ai-ui-cleaner`; inside Claude use `/plugin marketplace add /absolute/path/to/ai-ui-cleaner`.
+- **Tools but no skill:** an MCP URL alone does not install `SKILL.md`. Install the plugin, not just the server.
+- **Skill but no images/tools:** check that the plugin is enabled and the host can reach `https://ai-ui-cleaner.ai-ui-cleaner.workers.dev/mcp`. Do not add a duplicate MCP if the plugin already supplies it. Opening `/mcp` as an ordinary webpage is not a protocol test.
+- **Unsupported plugin commands:** update the host. If necessary, install the skill folder manually in the project's `.agents/skills/` (Codex) or `.claude/skills/` (Claude), and separately register the hosted HTTP MCP using the host's MCP instructions.
+
+The package paths and tests are checked in this repo. A complete GUI install is a separate check; Claude Code is not installed in the development environment. Do not treat a passing unit test as proof of installation in either desktop app.
+
+## Where everything lives
+
+GitHub contains the skill, manifests, MCP source, schemas, migrations and small original seed records. The hosted corpus metadata/search lives in Cloudflare D1/Vectorize, and screenshots live in the dedicated `ai-ui-cleaner-corpus` R2 bucket. Installing does not upload data or create cloud resources. No npm publication or separate skill website is required for this custom marketplace.
+
+The corpus setup/owner workflow is separate: see [Cloudflare deployment and quotas](docs/cloudflare.md). Owner setup never uses `quran-mode-assets` or changes existing websites/domains. Hosted queries may consume the owner's service quotas; “no installer API key” does not mean unlimited or cost-free hosting.
+
+## Local development (not required for installation)
 
 ```bash
 npm install
@@ -21,61 +101,11 @@ npm run build
 npm run check
 ```
 
-Start the local stdio server:
+`npm start` runs the local stdio MCP; `npm run start:http` serves `http://localhost:3000/mcp` with health at `/health`. These local modes use local/seed data unless cloud forwarding is configured. Plugin configurations instead connect directly to the hosted public corpus.
 
-```bash
-npm start
-```
+`npm run mcp:check` verifies anonymous hosted discovery, search, metadata and one image fetch. Search may use a query embedding; this does not caption images or mutate the corpus. It does not install a plugin.
 
-Start a stateless streamable HTTP endpoint:
-
-```bash
-npm run start:http
-```
-
-The endpoint is available at `http://localhost:3000/mcp`; health information is at `http://localhost:3000/health`.
-
-## Plugin layouts
-
-- `plugin.json`, `mcp.json`, and `skills/` form the portable Agent Plugins package.
-- `.codex-plugin/plugin.json` is the Codex compatibility manifest.
-- `.claude-plugin/plugin.json` and `.mcp.json` support Claude-compatible installation.
-- `.claude-plugin/marketplace.json` is the shared desktop-install catalog (Claude format, also supported by Codex).
-- Both plugin manifests connect directly to the hosted public MCP. The committed `dist/index.cjs` remains available for local development or stdio-only hosts; rebuild it whenever server source changes.
-
-### Install in desktop apps (skill + MCP together)
-
-See [desktop installation](docs/desktop-install.md). The plugin installer downloads the skill from this GitHub repository and connects its bundled MCP configuration to Cloudflare. Adding the MCP URL alone does **not** download the skill. The reference database and images stay on Cloudflare, outside the plugin download.
-
-### Connect only the running public MCP
-
-Nothing needs to run locally for the hosted corpus. Use the full `/mcp` URL, not the homepage. No API key or OAuth login is required.
-
-Codex CLI (also shared with compatible desktop/IDE settings):
-
-```bash
-codex mcp add ai_ui_cleaner --url https://ai-ui-cleaner.ai-ui-cleaner.workers.dev/mcp
-codex mcp list
-```
-
-Claude Code:
-
-```bash
-claude mcp add --transport http --scope user ai_ui_cleaner https://ai-ui-cleaner.ai-ui-cleaner.workers.dev/mcp
-claude mcp list
-```
-
-Start a new session after connecting. If the plugin already supplies this MCP, do not add a second copy. A connection adds tools, not the skill instructions: install the bundled skill/plugin too, or copy `skills/ai-ui-cleaner` into the target project's `.agents/skills/` for Codex or `.claude/skills/` for Claude Code. Invoke `$ai-ui-cleaner` in Codex or `/ai-ui-cleaner` for a standalone Claude Code skill. Plugin-installed Claude skills may have a plugin-qualified command name.
-
-The skill first resolves the visual direction (asking when unspecified), searches visual layout terms rather than echoing product nouns, and inspects 3–5 matching screenshots. It reconstructs one primary visible frame, checks the layout, then swaps in the user's content. General web search is a fallback for a concrete coverage gap, not the primary source.
-
-To test from chat, ask: `Use AI UI Cleaner to search for doctor appointment references, inspect two screenshots, and explain what can be adapted. Do not implement yet.` You should see `search_references`, `get_reference` and `get_reference_asset` calls. A `/mcp` URL is a protocol endpoint, so opening it as an ordinary browser page is not a connection test.
-
-For a developer-side end-to-end check, run `npm run mcp:check` after installing dependencies. It verifies anonymous tool discovery, corpus stats, one normal search, selected metadata and its screenshot. Normal search may use a query embedding; this check does not caption images or alter the corpus.
-
-Official setup references: [Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli), [Codex skills](https://learn.chatgpt.com/docs/build-skills), [Claude Code MCP](https://code.claude.com/docs/en/mcp), and [Claude Code skills](https://code.claude.com/docs/en/skills).
-
-Do not commit credentials to either MCP configuration.
+Package layout: `plugin.json`, `mcp.json`, `skills/`, `.codex-plugin/plugin.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `.mcp.json`. The bundled `dist/index.cjs` is for local stdio development; rebuild after server changes. Never commit credentials.
 
 ## MCP tools
 

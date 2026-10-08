@@ -1,6 +1,6 @@
 interface:
   display_name: "AI UI Cleaner"
   short_description: "Create and repair authored product interfaces"
-  default_prompt: "Use $ai-ui-cleaner to create, redesign, or review this interface using its design DNA and retrieved references."
+  default_prompt: "Use $ai-ui-cleaner for this interface: resolve the target platform and vibe, inspect matching RAG screenshots, reconstruct one primary frame, then adapt my content."
 policy:
   allow_implicit_invocation: true

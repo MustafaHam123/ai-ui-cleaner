@@ -1,12 +1,12 @@
 {
   "name": "ai-ui-cleaner",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Reference-grounded interface creation, retrieval, implementation, and review.",
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "AI UI Cleaner",
     "shortDescription": "Create and repair authored product interfaces",
-    "defaultPrompt": "Use $ai-ui-cleaner to create, redesign, or review this interface with its design DNA and retrieved references."
+    "defaultPrompt": "Use $ai-ui-cleaner for this interface: resolve the target platform and vibe, inspect matching RAG screenshots, reconstruct one primary frame, then adapt my content."
   }
 }

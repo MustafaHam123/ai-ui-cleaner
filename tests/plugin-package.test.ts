@@ -13,12 +13,14 @@ test("desktop marketplace resolves the bundled skill and both host manifests", a
   const entry = catalog.plugins[0];
   assert.equal(entry.source, "./");
   assert.equal(entry.policy.installation, "AVAILABLE");
-  for (const path of ["plugin.json", ".codex-plugin/plugin.json", ".claude-plugin/plugin.json"]) {
+  for (const path of ["plugin.json", ".codex-plugin/plugin.json", ".claude-plugin/plugin.json", "package.json"]) {
     const manifest = await json(path);
     assert.equal(manifest.name, entry.name);
     assert.equal(manifest.version, entry.version);
   }
   const codex = await json(".codex-plugin/plugin.json");
+  const portable = await json("plugin.json");
+  assert.equal(codex.interface.defaultPrompt, portable.extensions["com.openai"].interface.defaultPrompt);
   await access(new URL(codex.mcpServers, root));
   const skill = await readFile(new URL(`${codex.skills}ai-ui-cleaner/SKILL.md`, root), "utf8");
   assert.match(skill, /^---\nname: ai-ui-cleaner\n/);
