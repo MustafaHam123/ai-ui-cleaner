@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Porsche Night Lab</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell" aria-label="Porsche Night Lab desktop configurator">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Porsche Night Lab home">
+          <span class="crest" aria-hidden="true"></span>
+          <span>Porsche Night Lab</span>
+        </a>
+        <nav class="nav-links" aria-label="Primary">
+          <a href="#configure">Configure</a>
+          <a href="#drive">Drive modes</a>
+          <a href="#gallery">Gallery</a>
+          <a href="#reserve">Reserve</a>
+        </nav>
+        <div class="top-actions">
+          <button class="icon-button" type="button" aria-label="Open saved builds">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1Z" />
+            </svg>
+          </button>
+          <button class="ghost-button" type="button">Book a drive</button>
+        </div>
+      </header>
+
+      <section class="hero" aria-labelledby="page-title">
+        <img class="hero-image" src="./assets/hero-red-coupe.png" alt="Red Porsche-inspired sports coupe in a black studio with red lighting" />
+        <div class="shade shade-left" aria-hidden="true"></div>
+        <div class="shade shade-bottom" aria-hidden="true"></div>
+
+        <aside class="build-panel" id="configure" aria-label="Build settings">
+          <p class="status-dot"><span></span> Studio build ready</p>
+          <h1 id="page-title">911 night configuration</h1>
+          <p class="intro">
+            Tune paint, cabin, chassis, and delivery preferences from one desktop cockpit.
+          </p>
+
+          <div class="paint-picker" aria-label="Paint selection">
+            <button class="swatch active" type="button" data-color="carmine" aria-label="Carmine red paint">
+              <span style="background:#d91f26"></span>
+            </button>
+            <button class="swatch" type="button" data-color="graphite" aria-label="Graphite black paint">
+              <span style="background:#18191c"></span>
+            </button>
+            <button class="swatch" type="button" data-color="chalk" aria-label="Chalk white paint">
+              <span style="background:#d8d2c6"></span>
+            </button>
+            <button class="swatch" type="button" data-color="racing-green" aria-label="Racing green paint">
+              <span style="background:#153f32"></span>
+            </button>
+          </div>
+
+          <div class="selectors">
+            <label>
+              Chassis
+              <select>
+                <option>Sport adaptive</option>
+                <option>Touring balance</option>
+                <option>Track response</option>
+              </select>
+            </label>
+            <label>
+              Cabin
+              <select>
+                <option>Black leather with red stitching</option>
+                <option>Slate leather with brushed trim</option>
+                <option>Classic cloth inserts</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="cta-row">
+            <a class="primary-button" href="#reserve">Start build</a>
+            <button class="play-button" type="button" aria-label="Preview engine sound">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5v14l11-7Z" />
+              </svg>
+            </button>
+          </div>
+        </aside>
+
+        <aside class="telemetry-panel" aria-label="Drive telemetry">
+          <div class="dial">
+            <svg viewBox="0 0 140 140" aria-hidden="true">
+              <circle cx="70" cy="70" r="58" class="dial-track"></circle>
+              <circle cx="70" cy="70" r="58" class="dial-progress"></circle>
+            </svg>
+            <div>
+              <strong data-output="mode-score">74</strong>
+              <span>Response</span>
+            </div>
+          </div>
+          <dl class="telemetry-list">
+            <div>
+              <dt>Drive mode</dt>
+              <dd data-output="mode-name">Sport</dd>
+            </div>
+            <div>
+              <dt>Suspension</dt>
+              <dd>Lowered</dd>
+            </div>
+            <div>
+              <dt>Cabin tone</dt>
+              <dd>Black/red</dd>
+            </div>
+          </dl>
+        </aside>
+
+        <section class="mode-strip" id="drive" aria-label="Drive mode selection">
+          <button class="mode-card active" type="button" data-mode="Sport" data-score="74">
+            <span>Sport</span>
+            <strong>Sharper throttle, tighter damping</strong>
+          </button>
+          <button class="mode-card" type="button" data-mode="Track" data-score="91">
+            <span>Track</span>
+            <strong>Maximum response for closed-course use</strong>
+          </button>
+          <button class="mode-card" type="button" data-mode="Touring" data-score="58">
+            <span>Touring</span>
+            <strong>Calmer steering and longer range comfort</strong>
+          </button>
+        </section>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
