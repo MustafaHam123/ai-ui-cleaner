@@ -1,6 +1,6 @@
 {
   "name": "ai-ui-cleaner",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Reference-grounded interface creation, retrieval, implementation, and review.",
   "author": {
     "name": "Mustafa Hameed"

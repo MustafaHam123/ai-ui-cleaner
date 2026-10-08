@@ -55,7 +55,7 @@ await Promise.all(Array.from({ length: 6 }, async () => {
         retrievalGuidance: { status: caption ? (caption.isInterface ? "inspect-before-adapting" : "exclude-from-ui-search") : "not-ready-for-primary-reference",
           whenToRetrieve: caption?.useWhen ?? [],
           queryAliases: caption?.queryAliases ?? (sourceTitle ? [sourceTitle] : []),
-          howToUse: "View the image through get_reference_asset before visual claims. Adapt content relationships to the user's existing components; do not copy branding, assets or a whole composition.",
+          howToUse: "View the content[] image block from get_reference_asset before visual claims. Reconstruct a chosen frame's visible geometry, then adapt content with the user's existing components; respect source branding and asset/code licenses.",
           implementationStatus: caption ? "unverified-adaptation-proposal" : "pending-image-inspection",
           limitations: caption?.limitations ?? ["Visual layout has not been analyzed. Source text is not pixel verification; implementation, behavior, responsiveness and accessibility are unknown."] },
         storedAt: new Date().toISOString(),

@@ -122,6 +122,8 @@ test("Worker stores real D1/R2 data and exposes authenticated stateless MCP", as
       const [a, b] = InMemoryTransport.createLinkedPair();
       await Promise.all([localClient.connect(a), proxy.connect(b)]);
       try {
+        assert.deepEqual(localClient.getServerVersion(), client.getServerVersion());
+        assert.equal(localClient.getInstructions(), client.getInstructions());
         assert.equal((await localClient.listTools()).tools.length, 5);
         const stats = await localClient.callTool({ name: "reference_stats", arguments: {} });
         assert.equal((stats.structuredContent as { total: number }).total, 1);

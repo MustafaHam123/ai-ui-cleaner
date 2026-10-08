@@ -11,6 +11,8 @@ AI UI Cleaner bundles a design skill with a public reference-search MCP for Code
 5. Reconstruct its visible composition, compare the rendered layout, then replace the content with the user's information.
 6. For responsive sites, inspect a suitable other-viewport reference and adapt the layout—not just shrink desktop.
 
+The screenshot is in the MCP response's `content[]` image block; `structuredContent` is metadata only. The agent must display and inspect those pixels, reject mismatched candidates, and compare the reconstruction with one chosen frame. If images cannot be viewed, it stops and requests a working reference rather than building from captions. A generated hero image is not a substitute for the layout reference. Every visible control must be exercised, genuinely disabled with an explanation, or omitted—not left looking functional.
+
 Existing product requirements and explicit user instructions stay authoritative. Unrequested all-caps labels, decorative numbering, metric strips and crude geometric models remain disabled. Screenshots are evidence, not permission to reuse unlicensed branding, assets or code. Review-only requests do not change files.
 
 ## Install
@@ -83,6 +85,7 @@ To check the clarification gate, send `Build a cool Porsche website` with the sk
 - **Marketplace missing:** check spelling, repository access and whether the catalog was pushed. For a local checkout, Codex can register it with `codex plugin marketplace add /absolute/path/to/ai-ui-cleaner`; inside Claude use `/plugin marketplace add /absolute/path/to/ai-ui-cleaner`.
 - **Tools but no skill:** an MCP URL alone does not install `SKILL.md`. Install the plugin, not just the server.
 - **Skill but no images/tools:** check that the plugin is enabled and the host can reach `https://ai-ui-cleaner.ai-ui-cleaner.workers.dev/mcp`. Do not add a duplicate MCP if the plugin already supplies it. Opening `/mcp` as an ordinary webpage is not a protocol test.
+- **“Only metadata returned”:** inspect the complete `get_reference_asset` response. Forward/display its `content[]` image block using the host's image viewer; do not inspect only `structuredContent`. If rendering still fails, stop the reference-led build and report the problem.
 - **Unsupported plugin commands:** update the host. If necessary, install the skill folder manually in the project's `.agents/skills/` (Codex) or `.claude/skills/` (Claude), and separately register the hosted HTTP MCP using the host's MCP instructions.
 
 The package paths and tests are checked in this repo. A complete GUI install is a separate check; Claude Code is not installed in the development environment. Do not treat a passing unit test as proof of installation in either desktop app.

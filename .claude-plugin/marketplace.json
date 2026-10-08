@@ -7,7 +7,7 @@
       "name": "ai-ui-cleaner",
       "source": "./",
       "description": "The AI UI Cleaner skill and hosted reference-search MCP, installed together.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "category": "Productivity",
       "policy": { "installation": "AVAILABLE", "authentication": "ON_USE" }
     }
