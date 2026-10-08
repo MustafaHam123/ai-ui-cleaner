@@ -55,7 +55,7 @@ test("screenshot delivery includes actual image bytes separately from metadata",
   let returnedBytes = new Uint8Array(bytes);
   let returnedMediaType = "image/png";
   let reads = 0;
-  const server = createAiUiCleanerServer(store, { maxAssetBytes: 1024, readAsset: async () => {
+  const server = createAiUiCleanerServer(store, { maxAssetBytes: 1024, assetUrl: (ref, asset) => `https://corpus.test/reference-image?referenceId=${ref}&assetId=${asset}`, readAsset: async () => {
     reads++; return { bytes: returnedBytes, mediaType: returnedMediaType };
   } });
   const client = new Client({ name: "image-delivery-test", version: "1" });
@@ -71,11 +71,21 @@ test("screenshot delivery includes actual image bytes separately from metadata",
       if (image.type !== "image") throw new Error("Missing image block");
       assert.equal(image.mimeType, "image/png");
       assert.deepEqual(Buffer.from(image.data, "base64"), bytes);
-      const metadata = result.structuredContent as { sha256: string; imageDelivery: { location: string; requiresVisualInspection: boolean } };
+      assert.equal(result.structuredContent, undefined, "Codex clients must not prefer structured metadata over image content");
+      const text = result.content[0];
+      assert.equal(text.type, "text");
+      if (text.type !== "text") throw new Error("Missing text metadata");
+      const metadata = JSON.parse(text.text);
       assert.equal(metadata.sha256, digest);
       assert.equal(metadata.imageDelivery.location, "content[1]");
       assert.equal(metadata.imageDelivery.requiresVisualInspection, true);
+      assert.equal(metadata.screenshotUrl, "https://corpus.test/reference-image?referenceId=image-delivery-fixture&assetId=fixture-png");
       assert.ok(!JSON.stringify(metadata).includes(image.data), "Do not duplicate base64 into metadata");
+      // Model a client that picks structuredContent when present: pixels must survive.
+      const preferred = result.structuredContent ?? result.content;
+      assert.ok(Array.isArray(preferred) && preferred.some(block => block.type === "image"));
+      const detail = await client.callTool({ name: "get_reference", arguments: { id: record.id } });
+      assert.deepEqual((detail.structuredContent as { screenshotUrls: unknown }).screenshotUrls, [{ assetId: "fixture-png", url: metadata.screenshotUrl }]);
     });
     await t.test("bad MIME, signature, digest and oversized bytes never return a screenshot", async () => {
       for (const variant of [

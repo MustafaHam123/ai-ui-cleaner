@@ -36,6 +36,32 @@ test("Worker stores real D1/R2 data and exposes authenticated stateless MCP", as
         const stats = await client.callTool({ name: "reference_stats", arguments: {} });
         assert.equal((stats.structuredContent as { total: number }).total, 0);
         assert.equal((await publicWorker.dispatchFetch("https://public.test/admin/stats")).status, 401);
+        const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1sAAAAASUVORK5CYII=", "base64");
+        const publicRecord = describeTarget(targets[0], "**License:** MIT", new Date().toISOString());
+        publicRecord.assets = [{ id: "public-preview", kind: "screenshot", storageKey: "assets/public.png", mediaType: "image/png", alt: "Test screenshot", sha256: createHash("sha256").update(png).digest("hex") }];
+        const bucket = await publicWorker.getR2Bucket("ASSETS");
+        await bucket.put("assets/public.png", png, { httpMetadata: { contentType: "image/png" } });
+        const store = new CloudflareStore({ DB: publicDb as unknown as Env["DB"], ASSETS: bucket as unknown as Env["ASSETS"] });
+        await store.upsert(publicRecord, false);
+        const asset = await client.callTool({ name: "get_reference_asset", arguments: { referenceId: publicRecord.id, assetId: "public-preview" } });
+        assert.equal(asset.structuredContent, undefined);
+        const text = (asset.content as Array<{ type: string; text?: string }>).find(block => block.type === "text")!;
+        const metadata = JSON.parse(text.text!);
+        const direct = await publicWorker.dispatchFetch(metadata.screenshotUrl);
+        assert.equal(direct.status, 200);
+        assert.equal(direct.headers.get("content-type"), "image/png");
+        assert.equal(direct.headers.get("x-content-type-options"), "nosniff");
+        assert.deepEqual(Buffer.from(await direct.arrayBuffer()), png);
+        assert.equal((await publicWorker.dispatchFetch(metadata.screenshotUrl, { method: "HEAD" })).status, 200);
+        assert.equal((await publicWorker.dispatchFetch("https://public.test/reference-image?key=raw/private.json")).status, 400);
+        assert.equal((await publicWorker.dispatchFetch(metadata.screenshotUrl.replace("public-preview", "unknown-asset"))).status, 404);
+        // A stored HTML payload or a digest mismatch must never become a browser image.
+        await bucket.put("assets/public.png", "<html>not pixels</html>", { httpMetadata: { contentType: "image/png" } });
+        assert.equal((await publicWorker.dispatchFetch(metadata.screenshotUrl)).status, 502);
+        await bucket.put("assets/public.png", Buffer.concat([png, Buffer.from([0])]), { httpMetadata: { contentType: "image/png" } });
+        assert.equal((await publicWorker.dispatchFetch(metadata.screenshotUrl)).status, 502);
+        await bucket.put("assets/public.png", png, { httpMetadata: { contentType: "image/jpeg" } });
+        assert.equal((await publicWorker.dispatchFetch(metadata.screenshotUrl)).status, 502);
       } finally { await client.close(); }
     } finally { await publicWorker.dispose(); }
   });
@@ -84,8 +110,15 @@ test("Worker stores real D1/R2 data and exposes authenticated stateless MCP", as
     assert.ok(data.results[0].implementation);
     const asset = await client.callTool({ name: "get_reference_asset", arguments: { referenceId: record.id, assetId: "sample-preview" } });
     assert.equal(asset.isError, undefined);
+    assert.equal(asset.structuredContent, undefined);
     const image = (asset.content as Array<{ type: string; data?: string }>).find(c => c.type === "image");
     assert.equal(image?.data, png.toString("base64"));
+    const text = (asset.content as Array<{ type: string; text?: string }>).find(block => block.type === "text")!;
+    const metadata = JSON.parse(text.text!);
+    assert.equal((await mf.dispatchFetch(metadata.screenshotUrl)).status, 401);
+    const direct = await mf.dispatchFetch(metadata.screenshotUrl, { headers: { authorization: "Bearer test-read" } });
+    assert.equal(direct.headers.get("cache-control"), "private, no-store");
+    assert.deepEqual(Buffer.from(await direct.arrayBuffer()), png);
     assert.equal((await client.callTool({ name: "get_code_asset", arguments: { id: record.id } })).isError, true);
     assert.equal((await request("/admin/ingest", { record, preserveReviewStatus: true })).status, 200);
     assert.equal((await client.callTool({ name: "get_code_asset", arguments: { id: record.id } })).isError, undefined);
@@ -127,6 +160,10 @@ test("Worker stores real D1/R2 data and exposes authenticated stateless MCP", as
         assert.equal((await localClient.listTools()).tools.length, 5);
         const stats = await localClient.callTool({ name: "reference_stats", arguments: {} });
         assert.equal((stats.structuredContent as { total: number }).total, 1);
+        const result = await localClient.callTool({ name: "get_reference_asset", arguments: { referenceId: record.id, assetId: "sample-preview" } });
+        assert.equal(result.structuredContent, undefined);
+        const image = (result.content as Array<{ type: string; data?: string }>).find(block => block.type === "image");
+        assert.equal(image?.data, png.toString("base64"));
       } finally { await localClient.close(); await proxy.close(); }
     } finally { globalThis.fetch = nativeFetch; }
   });

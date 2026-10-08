@@ -3,6 +3,8 @@ import { createAiUiCleanerServer } from "../src/server.js";
 import { normalizeImportedRecord } from "../src/ingestion.js";
 import { CloudflareStore, type Env } from "./store.js";
 import { readBoundedBody } from "../src/http-body.js";
+import { readReferenceImage, ReferenceImageError } from "../src/reference-image.js";
+import type { ServerOptions } from "../src/repository.js";
 
 async function authorized(request: Request, token: string | undefined) {
   if (!token) return false;
@@ -12,6 +14,16 @@ async function authorized(request: Request, token: string | undefined) {
   const left = new Uint8Array(a), right = new Uint8Array(b);
   let difference = 0; for (let i = 0; i < left.length; i++) difference |= left[i] ^ right[i];
   return difference === 0;
+}
+
+async function authorizeRead(request: Request, env: Env): Promise<Response | undefined> {
+  if (env.PUBLIC_MCP !== "true") {
+    if (!await authorized(request, env.MCP_READ_TOKEN)) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  } else {
+    if (!env.MCP_RATE_LIMIT) return Response.json({ error: "Public access is not configured safely" }, { status: 503 });
+    const key = request.headers.get("CF-Connecting-IP") ?? "anonymous";
+    if (!(await env.MCP_RATE_LIMIT.limit({ key })).success) return Response.json({ error: "Too many requests" }, { status: 429, headers: { "retry-after": "60" } });
+  }
 }
 
 export default {
@@ -52,28 +64,46 @@ export default {
       }
       return new Response("Not found", { status: 404 });
     }
-    if (url.pathname !== "/mcp") return Response.json({ service: "ai-ui-cleaner", endpoint: "/mcp", protocol: "MCP Streamable HTTP" }, { status: url.pathname === "/" ? 200 : 404 });
-    if (env.PUBLIC_MCP !== "true" && !await authorized(request, env.MCP_READ_TOKEN)) return Response.json({ error: "Unauthorized" }, { status: 401 });
-    if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
-    if (env.PUBLIC_MCP === "true") {
-      if (!env.MCP_RATE_LIMIT) return Response.json({ error: "Public access is not configured safely" }, { status: 503 });
-      // Anonymous clients have no stable account ID; shared-network users share this allowance.
-      const key = request.headers.get("CF-Connecting-IP") ?? "anonymous";
-      if (!(await env.MCP_RATE_LIMIT.limit({ key })).success) return Response.json({ error: "Too many requests" }, { status: 429, headers: { "retry-after": "60" } });
+    const imageOptions: ServerOptions = {
+      assetHosts: (env.ASSET_HOSTS ?? "").split(",").map(host => host.trim().toLowerCase()).filter(Boolean), maxAssetBytes: 8_388_608,
+      assetUrl: (referenceId, assetId) => {
+        const imageUrl = new URL("/reference-image", url.origin);
+        imageUrl.searchParams.set("referenceId", referenceId); imageUrl.searchParams.set("assetId", assetId);
+        return imageUrl.href;
+      },
+      readAsset: async asset => {
+        const object = await env.ASSETS.get(asset.storageKey!);
+        if (!object) throw new ReferenceImageError("Screenshot object missing", 404);
+        if (object.size > 8_388_608) throw new ReferenceImageError("Screenshot object oversized", 413);
+        return { bytes: new Uint8Array(await object.arrayBuffer()), mediaType: object.httpMetadata?.contentType ?? "" };
+      },
+    };
+    if (url.pathname === "/reference-image") {
+      if (!["GET", "HEAD"].includes(request.method)) return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
+      const denied = await authorizeRead(request, env); if (denied) return denied;
+      const referenceId = url.searchParams.get("referenceId") ?? "", assetId = url.searchParams.get("assetId") ?? "";
+      if (![referenceId, assetId].every(id => /^[a-zA-Z0-9._-]{3,128}$/.test(id))) return Response.json({ error: "Invalid reference or asset ID" }, { status: 400 });
+      try {
+        const { asset, bytes, digest } = await readReferenceImage(store, referenceId, assetId, imageOptions);
+        return new Response(request.method === "HEAD" ? null : Uint8Array.from(bytes).buffer, { headers: {
+          "content-type": asset.mediaType, "content-length": String(bytes.byteLength),
+          "content-disposition": "inline", "x-content-type-options": "nosniff",
+          "cache-control": env.PUBLIC_MCP === "true" ? "public, max-age=300" : "private, no-store",
+          etag: `"${digest}"`,
+        } });
+      } catch (error) {
+        return Response.json({ error: "Screenshot unavailable" }, { status: error instanceof ReferenceImageError ? error.status : 502 });
+      }
     }
+    if (url.pathname !== "/mcp") return Response.json({ service: "ai-ui-cleaner", endpoint: "/mcp", protocol: "MCP Streamable HTTP" }, { status: url.pathname === "/" ? 200 : 404 });
+    if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
+    const denied = await authorizeRead(request, env); if (denied) return denied;
     let boundedRequest: Request;
     try {
       const bytes = await readBoundedBody(request, 64_000);
       boundedRequest = new Request(request.url, { method: "POST", headers: request.headers, body: new Uint8Array(bytes).buffer });
     } catch { return Response.json({ error: "MCP request exceeds 64 KB" }, { status: 413 }); }
-    const server = createAiUiCleanerServer(store, {
-      assetHosts: (env.ASSET_HOSTS ?? "").split(",").filter(Boolean), maxAssetBytes: 8_388_608,
-      readAsset: async asset => {
-        const object = await env.ASSETS.get(asset.storageKey!);
-        if (!object || object.size > 8_388_608) throw new Error("Asset missing or oversized");
-        return { bytes: new Uint8Array(await object.arrayBuffer()), mediaType: object.httpMetadata?.contentType ?? "" };
-      },
-    });
+    const server = createAiUiCleanerServer(store, imageOptions);
     const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
     await server.connect(transport);
     try { return await transport.handleRequest(boundedRequest); }

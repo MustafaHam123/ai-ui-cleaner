@@ -24,6 +24,7 @@ export interface ServerOptions {
   assetHosts?: string[];
   maxAssetBytes?: number;
   readAsset?: (asset: z.infer<typeof referenceAssetSchema>) => Promise<AssetBytes>;
+  assetUrl?: (referenceId: string, assetId: string) => string;
 }
 
 export function summarizeRecords(records: ReferenceRecord[], backend: string): CorpusStats {

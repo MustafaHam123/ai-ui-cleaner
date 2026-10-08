@@ -7,7 +7,7 @@ const origin = 'https://ai-ui-cleaner.ai-ui-cleaner.workers.dev';
 const client = new Client({ name: 'ai-ui-cleaner-connection-check', version: '1' });
 try {
   await client.connect(new StreamableHTTPClientTransport(new URL('/mcp', origin)));
-  if (client.getServerVersion()?.version !== '0.1.2') throw new Error('Hosted MCP is stale: deploy the current 0.1.2 workflow before claiming the setup is ready');
+  if (client.getServerVersion()?.version !== '0.1.3') throw new Error('Hosted MCP is stale: deploy the current 0.1.3 workflow before claiming the setup is ready');
   const names = (await client.listTools()).tools.map(tool => tool.name);
   for (const name of ['reference_stats', 'search_references', 'get_reference', 'get_reference_asset', 'get_code_asset']) {
     if (!names.includes(name)) throw new Error(`Missing MCP tool: ${name}`);
@@ -28,7 +28,13 @@ try {
   if (detail.isError || !reference?.visualMetadata || !reference.assets.length) throw new Error('Selected image metadata unavailable');
   const asset = await client.callTool({ name: 'get_reference_asset', arguments: { referenceId: chosen.id, assetId: reference.assets[0].id } });
   if (asset.isError || !Array.isArray(asset.content) || !asset.content.some((item: { type?: string }) => item.type === 'image')) throw new Error('Selected screenshot unavailable');
-  const delivery = (asset.structuredContent as { imageDelivery?: { location: string; requiresVisualInspection: boolean } }).imageDelivery;
+  if (asset.structuredContent !== undefined) throw new Error('Image results must not shadow content[] with structuredContent');
+  const text = asset.content.find(item => item.type === 'text');
+  const metadata = text?.type === 'text' ? JSON.parse(text.text) : undefined;
+  const delivery = metadata?.imageDelivery;
   if (delivery?.location !== 'content[1]' || delivery.requiresVisualInspection !== true) throw new Error('Hosted image-display contract is missing');
+  const fallback = await fetch(metadata.screenshotUrl, { redirect: 'error' });
+  const image = asset.content.find(item => item.type === 'image');
+  if (!fallback.ok || image?.type !== 'image' || !Buffer.from(await fallback.arrayBuffer()).equals(Buffer.from(image.data, 'base64'))) throw new Error('Direct screenshot URL does not serve the MCP image bytes');
   console.log('Passed: search → full caption/guidance → actual screenshot. No installer credentials needed.');
 } finally { await client.close(); }
